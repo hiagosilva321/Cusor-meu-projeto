@@ -21,6 +21,7 @@ api/.env
 !.env.example
 !api/.env.example
 deploy/COLAR-NA-VPS-dotenv.txt
+deploy/deploy-target.env
 
 # Editor directories and files
 .vscode/*

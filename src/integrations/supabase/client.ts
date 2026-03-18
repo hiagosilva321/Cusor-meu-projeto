@@ -3,7 +3,11 @@ import type { Database } from "./types";
 
 declare global {
   interface Window {
-    __CACAMBAJA_ENV__?: { supabaseUrl: string; supabaseAnonKey: string };
+    __CACAMBAJA_ENV__?: {
+      supabaseUrl: string;
+      supabaseAnonKey: string;
+      turnstileSiteKey?: string;
+    };
   }
 }
 

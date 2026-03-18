@@ -6,12 +6,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { WhatsAppProvider } from "@/contexts/WhatsAppContext";
 import Index from "./pages/Index.tsx";
+import AdminLogin from "./pages/admin/AdminLogin.tsx";
 
 const Checkout = lazy(() => import("./pages/Checkout.tsx"));
 const Payment = lazy(() => import("./pages/Payment.tsx"));
 const PaymentConfirmed = lazy(() => import("./pages/PaymentConfirmed.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
-const AdminLogin = lazy(() => import("./pages/admin/AdminLogin.tsx"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard.tsx"));
 const AdminLeads = lazy(() => import("./pages/admin/AdminLeads.tsx"));
 const AdminOrders = lazy(() => import("./pages/admin/AdminOrders.tsx"));
@@ -23,7 +23,7 @@ const AdminRegions = lazy(() => import("./pages/admin/AdminRegions.tsx"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings.tsx"));
 
 const PageLoader = () => (
-  <div className="flex min-h-[40vh] items-center justify-center text-muted-foreground">
+  <div className="flex min-h-[100dvh] min-h-screen w-full items-center justify-center bg-muted text-muted-foreground">
     A carregar…
   </div>
 );

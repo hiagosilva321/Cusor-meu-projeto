@@ -34,7 +34,11 @@ if (!url || !key) {
     "Falta VITE_SUPABASE_URL e uma chave: VITE_SUPABASE_PUBLISHABLE_KEY ou VITE_SUPABASE_ANON_KEY",
   );
 }
-const payload = JSON.stringify({ supabaseUrl: url, supabaseAnonKey: key });
+const turnstile = (vars.VITE_TURNSTILE_SITE_KEY || "").trim();
+const envObj = { supabaseUrl: url, supabaseAnonKey: key };
+if (turnstile) envObj.turnstileSiteKey = turnstile;
+const payload = JSON.stringify(envObj);
 fs.mkdirSync(path.dirname(outPath), { recursive: true });
 fs.writeFileSync(outPath, `window.__CACAMBAJA_ENV__=${payload};`, "utf8");
+if (turnstile) console.log("OK: turnstileSiteKey incluído (login com CAPTCHA).");
 console.log("OK:", outPath, url ? "(com URL)" : "(URL vazia — verifica .env)");

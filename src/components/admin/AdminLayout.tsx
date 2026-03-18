@@ -78,9 +78,9 @@ export function AdminLayout({ children, title }: { children: ReactNode; title: s
   }
 
   return (
-    <div className="min-h-screen flex bg-muted">
-      {/* Sidebar */}
-      <aside className="w-64 bg-primary flex-col shrink-0 hidden md:flex">
+    <div className="admin-shell flex min-h-[100dvh] w-full max-w-full flex-1 overflow-x-hidden bg-muted">
+      {/* Sidebar — mesma cor à direita evita fuga de 1px (linha branca) no seam */}
+      <aside className="relative z-[1] hidden w-64 shrink-0 flex-col bg-primary shadow-[1px_0_0_0_hsl(var(--primary))] md:flex md:flex-col">
         <div className="p-6 flex items-center gap-3">
           <img src={logoIcon} alt="Logo" className="h-8 w-8" />
           <span className="font-display text-lg font-bold text-primary-foreground">
@@ -127,7 +127,7 @@ export function AdminLayout({ children, title }: { children: ReactNode; title: s
       </aside>
 
       {/* Main */}
-      <main className="flex-1 flex flex-col min-h-screen">
+      <main className="relative z-0 flex min-h-[100dvh] min-w-0 flex-1 flex-col bg-muted">
         <header className="md:hidden bg-primary p-4 flex items-center justify-between">
           <span className="font-display text-lg font-bold text-primary-foreground">
             Caçamba<span className="text-accent">Já</span>
@@ -137,7 +137,7 @@ export function AdminLayout({ children, title }: { children: ReactNode; title: s
           </button>
         </header>
 
-        <nav className="md:hidden flex overflow-x-auto bg-card border-b px-2">
+        <nav className="md:hidden flex overflow-x-auto bg-primary border-b border-primary-foreground/10 px-2">
           {menuItems.map((item) => {
             const active = location.pathname === item.path;
             return (
@@ -145,7 +145,7 @@ export function AdminLayout({ children, title }: { children: ReactNode; title: s
                 key={item.path}
                 onClick={() => navigate(item.path)}
                 className={`flex flex-col items-center gap-1 px-4 py-3 text-xs whitespace-nowrap shrink-0 ${
-                  active ? 'text-accent border-b-2 border-accent' : 'text-muted-foreground'
+                  active ? 'text-accent border-b-2 border-accent' : 'text-primary-foreground/75'
                 }`}
               >
                 <item.icon size={18} />

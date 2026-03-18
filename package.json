@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "deploy": "node deploy/prepare-deploy.mjs",
+    "deploy:vps": "node deploy/prepare-deploy.mjs && node deploy/sync-dist-vps.mjs",
     "check:supabase": "node deploy/check-supabase-env.mjs",
     "create-admin": "node deploy/create-admin-user.mjs",
     "build:dev": "vite build --mode development",
@@ -17,6 +18,7 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
+    "@marsidev/react-turnstile": "^1.4.2",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",
     "@radix-ui/react-aspect-ratio": "^1.1.7",

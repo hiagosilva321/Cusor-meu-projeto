@@ -29,4 +29,22 @@ if (fs.existsSync(envPath)) {
   );
 }
 
+/** Quebra cache agressivo em index.html: cada deploy muda o ficheiro (ver deploy/CACHE-SPA.md). */
+const deployId = new Date().toISOString();
+const indexHtml = path.join(root, "dist", "index.html");
+if (fs.existsSync(indexHtml)) {
+  let html = fs.readFileSync(indexHtml, "utf8");
+  const tag = `<meta name="cacamba-deploy-id" content="${deployId}" />\n  `;
+  if (!html.includes("cacamba-deploy-id")) {
+    html = html.replace(/<head(\s[^>]*)?>/i, (m) => `${m}\n  ${tag}`);
+  } else {
+    html = html.replace(
+      /<meta name="cacamba-deploy-id" content="[^"]*"/,
+      `<meta name="cacamba-deploy-id" content="${deployId}"`,
+    );
+  }
+  fs.writeFileSync(indexHtml, html);
+  console.log("\n>> dist/index.html marcado com cacamba-deploy-id:", deployId, "\n");
+}
+
 console.log("\n>> Pronto. Envie a pasta dist/ (e env.js) para o servidor ou faça git push + deploy na VPS.\n");
