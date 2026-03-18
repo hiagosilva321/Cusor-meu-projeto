@@ -1,0 +1,18 @@
+=== O QUE FIZ NO PROJETO (PC) ===
+1. O Supabase no browser passa a ler PRIMEIRO o env.js (corrige site antigo com dfj...).
+2. Build novo: pasta dist/ com index-*.js novo + env.js para liuocutpghreoputefav.
+
+=== O QUE TU TENS DE FAZER (servidor) ===
+Opção A — Enviar pelo FileZilla / painel:
+  Copia TODA a pasta dist/ do teu PC para a raiz do site (onde está index.html).
+  Sobrescreve ficheiros. Não apagues .user.ini se o painel usar.
+
+Opção B — VPS com Git:
+  git pull origin main
+  Garante .env na raiz com VITE_SUPABASE_URL=liuocutpghreoputefav...
+  bash deploy/deploy-site.sh
+
+Depois: Ctrl+F5 no site. Os pedidos têm de ir para liuocutpghreoputefav.supabase.co
+
+Ficheiro deploy/env-wwwroot-ATUAL.js = cópia só do env.js se quiseres subir só isso
+(MAS precisas do NOVO index-*.js do dist — senão o código antigo ignora env.js).

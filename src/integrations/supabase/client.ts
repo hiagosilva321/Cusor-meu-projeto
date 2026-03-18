@@ -8,15 +8,19 @@ declare global {
 }
 
 function getSupabaseConfig(): { url: string; key: string } {
-  const w = typeof window !== "undefined" ? window.__CACAMBAJA_ENV__ : undefined;
-  const url =
-    (import.meta.env.VITE_SUPABASE_URL as string) ||
-    w?.supabaseUrl ||
-    "";
+  if (typeof window !== "undefined") {
+    const w = window.__CACAMBAJA_ENV__;
+    const urlW = (w?.supabaseUrl ?? "").trim();
+    const keyW = (w?.supabaseAnonKey ?? "").trim();
+    /** env.js no servidor (carrega antes do bundle) — corrige deploy antigo com URL errada */
+    if (urlW.includes(".supabase.co") && keyW.length > 35) {
+      return { url: urlW, key: keyW };
+    }
+  }
+  const url = (import.meta.env.VITE_SUPABASE_URL as string) || "";
   const key =
     (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string) ||
     (import.meta.env.VITE_SUPABASE_ANON_KEY as string) ||
-    w?.supabaseAnonKey ||
     "";
   return { url, key };
 }
