@@ -20,6 +20,7 @@ dist-ssr
 api/.env
 !.env.example
 !api/.env.example
+deploy/COLAR-NA-VPS-dotenv.txt
 
 # Editor directories and files
 .vscode/*
