@@ -11,7 +11,7 @@ export function mapSupabaseAuthError(message: string): string {
     return 'Não foi possível conectar ao Supabase. Verifique VITE_SUPABASE_URL / env.js no site e o firewall.';
   }
   if (m.includes('invalid api key') || m.includes('jwt') || m.includes('apikey')) {
-    return 'Chave API inválida: no Supabase → Settings → API, copie a chave anon/public (JWT longo, começa com eyJ). Não use service_role. Atualize .env, rode node deploy/write-env-js.mjs e suba o env.js + novo build.';
+    return 'Chave inválida: Supabase → API → Legacy → copie "anon public" (eyJ...). Cole em .env como VITE_SUPABASE_PUBLISHABLE_KEY → npm run deploy → suba env.js. Guia: deploy/USAR-CHAVE-ANON.md';
   }
   return message || 'Não foi possível entrar. Tente de novo.';
 }
