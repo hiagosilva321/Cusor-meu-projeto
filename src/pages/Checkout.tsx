@@ -7,6 +7,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { apiPost } from '@/lib/api';
 import { SiteHeader } from '@/components/landing/SiteHeader';
 import { SiteFooter } from '@/components/landing/SiteFooter';
+import { WhatsAppFloatingButton } from '@/components/landing/WhatsAppFloatingButton';
 import { ShoppingCart, MapPin, User, CreditCard, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -267,6 +268,7 @@ const Checkout = () => {
         </div>
       </main>
       <SiteFooter />
+      <WhatsAppFloatingButton />
     </div>
   );
 };

@@ -3,6 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { SiteHeader } from '@/components/landing/SiteHeader';
 import { SiteFooter } from '@/components/landing/SiteFooter';
+import { WhatsAppFloatingButton } from '@/components/landing/WhatsAppFloatingButton';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Home, Loader2 } from 'lucide-react';
 
@@ -65,6 +66,7 @@ const PaymentConfirmed = () => {
         </div>
       </main>
       <SiteFooter />
+      <WhatsAppFloatingButton />
     </div>
   );
 };

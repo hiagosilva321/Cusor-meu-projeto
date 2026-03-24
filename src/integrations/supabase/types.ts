@@ -322,6 +322,8 @@ export type Database = {
           telefone_principal: string | null
           updated_at: string
           whatsapp_principal: string | null
+          whatsapp_rotacao_a_cada: number
+          whatsapp_rotacao_ativa: boolean
         }
         Insert: {
           created_at?: string
@@ -333,6 +335,8 @@ export type Database = {
           telefone_principal?: string | null
           updated_at?: string
           whatsapp_principal?: string | null
+          whatsapp_rotacao_a_cada?: number
+          whatsapp_rotacao_ativa?: boolean
         }
         Update: {
           created_at?: string
@@ -344,6 +348,8 @@ export type Database = {
           telefone_principal?: string | null
           updated_at?: string
           whatsapp_principal?: string | null
+          whatsapp_rotacao_a_cada?: number
+          whatsapp_rotacao_ativa?: boolean
         }
         Relationships: []
       }
@@ -433,6 +439,13 @@ export type Database = {
       }
       register_weighted_whatsapp_click: {
         Args: { p_page_url: string; p_visitor_id: string }
+        Returns: {
+          number_id: string
+          number_value: string
+        }[]
+      }
+      peek_next_whatsapp_number: {
+        Args: { p_visitor_id: string }
         Returns: {
           number_id: string
           number_value: string

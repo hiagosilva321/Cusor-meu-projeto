@@ -22,6 +22,7 @@ api/.env
 !api/.env.example
 deploy/COLAR-NA-VPS-dotenv.txt
 deploy/deploy-target.env
+deploy/supabase-management.env
 
 # Editor directories and files
 .vscode/*

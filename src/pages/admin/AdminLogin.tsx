@@ -9,6 +9,9 @@ import { toast } from 'sonner';
 import { supabase, isSupabaseClientConfigured } from '@/integrations/supabase/client';
 import { mapSupabaseAuthError } from '@/lib/auth-errors';
 import logoIcon from '@/assets/logo-icon.png';
+import { cn } from '@/lib/utils';
+import { useAdminTheme } from '@/contexts/AdminThemeContext';
+import { AdminThemeToggle } from '@/components/admin/AdminThemeToggle';
 
 const DEFAULT_ADMIN_EMAIL = 'admin@cacambja.com';
 
@@ -21,6 +24,7 @@ function turnstileSiteKey(): string {
 }
 
 export default function AdminLogin() {
+  const { theme } = useAdminTheme();
   const navigate = useNavigate();
   const [email, setEmail] = useState(DEFAULT_ADMIN_EMAIL);
   const [password, setPassword] = useState('');
@@ -83,7 +87,15 @@ export default function AdminLogin() {
   };
 
   const shell = (
-    <div className="fixed inset-0 z-[9999] flex min-h-[100dvh] w-full flex-col items-center justify-center overflow-y-auto bg-primary px-4 py-10 sm:px-6 sm:py-12">
+    <div
+      className={cn(
+        'fixed inset-0 z-[9999] flex min-h-[100dvh] w-full flex-col items-center justify-center overflow-y-auto bg-primary px-4 py-10 sm:px-6 sm:py-12',
+        theme === 'dark' && 'dark',
+      )}
+    >
+      <div className="absolute right-3 top-3 sm:right-5 sm:top-5">
+        <AdminThemeToggle className="text-primary-foreground hover:bg-primary-foreground/10 hover:text-primary-foreground" />
+      </div>
       <div className="w-full max-w-md shrink-0 rounded-2xl border border-primary-foreground/10 bg-card p-8 shadow-2xl">
         <div className="mb-6 text-center">
           <img src={logoIcon} alt="" className="mx-auto mb-4 h-14 w-14" />
@@ -98,14 +110,21 @@ export default function AdminLogin() {
         )}
 
         {!tsKey && (
-          <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-left text-xs text-amber-950 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-100">
-            <strong>Erro 422 no login?</strong> O Supabase pode exigir CAPTCHA. Faça <strong>uma</strong> destas: (1){' '}
-            <strong>Desligar</strong> proteção no login: Authentication → <strong>Attack Protection</strong> → desative
-            CAPTCHA no sign-in. (2) Ou crie Turnstile em Cloudflare, coloque o <strong>Site Key</strong> em{' '}
-            <code className="rounded bg-black/10 px-1">VITE_TURNSTILE_SITE_KEY</code> no <code>.env</code>, regenere{' '}
-            <code>env.js</code> e faça deploy — guia: <code>deploy/DIAGNOSTICO-LOGIN-E-DEPLOY.md</code>
-          </div>
+          <p className="text-muted-foreground mb-4 rounded-lg border border-border bg-muted/40 p-3 text-left text-xs leading-relaxed">
+            <strong className="text-foreground">Sem chave Turnstile no site.</strong> Se o login der 422, no Supabase desative CAPTCHA no sign-in
+            (Authentication → Attack Protection) ou defina <code className="rounded bg-muted px-1">VITE_TURNSTILE_SITE_KEY</code> no{' '}
+            <code className="rounded bg-muted px-1">.env</code>, regenere <code className="rounded bg-muted px-1">env.js</code> e faça deploy.{' '}
+            <span className="text-muted-foreground">Guia no repositório: </span>
+            <code className="rounded bg-muted px-1">deploy/DIAGNOSTICO-LOGIN-E-DEPLOY.md</code>
+          </p>
         )}
+
+        {tsKey ? (
+          <p className="text-muted-foreground mb-3 text-center text-xs leading-relaxed">
+            Complete a verificação abaixo antes de entrar. Se continuar a falhar, confira se a <strong className="text-foreground">Secret Key</strong> do
+            Turnstile no Supabase (Attack Protection) corresponde à mesma chave do widget no Cloudflare.
+          </p>
+        ) : null}
 
         <form onSubmit={handleLogin} className="space-y-4">
           <div className="relative">
@@ -141,7 +160,7 @@ export default function AdminLogin() {
                 onSuccess={(token) => setCaptchaToken(token)}
                 onExpire={() => setCaptchaToken(null)}
                 onError={() => setCaptchaToken(null)}
-                options={{ theme: 'light', size: 'normal' } as const}
+                options={{ theme: theme === 'dark' ? 'dark' : 'light', size: 'normal' } as const}
               />
             </div>
           ) : null}

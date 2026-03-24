@@ -30,6 +30,14 @@ const WhatsAppContext = createContext<WhatsAppContextType | null>(null);
 const VISITOR_ID_KEY = 'cacamba_visitor_id';
 const ASSIGNED_NUMBER_ID_KEY = 'cacamba_assigned_whatsapp_number_id';
 const DEFAULT_MESSAGE = 'Olá quero pedir uma caçamba';
+/** Quando não há linhas em whatsapp_numbers, usa site_settings.whatsapp_principal */
+const FALLBACK_WHATSAPP_ID = '__site_settings_principal__';
+
+function normalizePrincipalForWa(raw: string | null | undefined): string | null {
+  if (!raw?.trim()) return null;
+  const digits = raw.replace(/\D/g, '');
+  return digits.length >= 10 ? raw.trim() : null;
+}
 
 function getOrCreateVisitorId(): string {
   let id = localStorage.getItem(VISITOR_ID_KEY);
@@ -76,28 +84,87 @@ function getMessageFromHref(href?: string): string | undefined {
 
 export function WhatsAppProvider({ children }: { children: React.ReactNode }) {
   const [numbers, setNumbers] = useState<WhatsAppNumber[]>([]);
+  const [principalFallback, setPrincipalFallback] = useState<string | null>(null);
+  const [rotationActive, setRotationActive] = useState(true);
+  const [peeked, setPeeked] = useState<{ id: string; number: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [assignedNumberId, setAssignedNumberId] = useState<string>(() => getStoredAssignedNumberId());
   const visitorId = useMemo(() => getOrCreateVisitorId(), []);
   const numbersRef = useRef<WhatsAppNumber[]>([]);
+  const rotationActiveRef = useRef(true);
+
+  useEffect(() => {
+    rotationActiveRef.current = rotationActive;
+  }, [rotationActive]);
 
   const loadActiveNumbers = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('whatsapp_numbers')
-        .select('id, number, label, peso_distribuicao, click_count, order_index')
-        .eq('active', true)
-        .order('order_index');
+      const [numbersRes, settingsTry] = await Promise.all([
+        supabase
+          .from('whatsapp_numbers')
+          .select('id, number, label, peso_distribuicao, click_count, order_index')
+          .eq('active', true)
+          .order('order_index'),
+        supabase
+          .from('site_settings')
+          .select('whatsapp_principal, whatsapp_rotacao_ativa')
+          .limit(1)
+          .maybeSingle(),
+      ]);
 
-      if (error) throw error;
-      setNumbers((data || []) as WhatsAppNumber[]);
+      if (numbersRes.error) throw numbersRes.error;
+      setNumbers((numbersRes.data || []) as WhatsAppNumber[]);
+
+      let settingsRes = settingsTry;
+      if (settingsTry.error) {
+        settingsRes = await supabase
+          .from('site_settings')
+          .select('whatsapp_principal')
+          .limit(1)
+          .maybeSingle();
+        if (!settingsRes.error && settingsRes.data) {
+          const principal = normalizePrincipalForWa(settingsRes.data.whatsapp_principal ?? null);
+          setPrincipalFallback(principal);
+          setRotationActive(false);
+        }
+      } else if (settingsRes.data) {
+        const principal = normalizePrincipalForWa(settingsRes.data.whatsapp_principal ?? null);
+        setPrincipalFallback(principal);
+        setRotationActive(settingsRes.data.whatsapp_rotacao_ativa !== false);
+      }
     } catch (err) {
       console.error('WhatsApp init error:', err);
       setNumbers([]);
+      setPrincipalFallback(null);
     } finally {
       setLoading(false);
     }
   }, []);
+
+  const refetchPeek = useCallback(async () => {
+    if (numbersRef.current.length === 0 || !rotationActiveRef.current) {
+      setPeeked(null);
+      return;
+    }
+    try {
+      const { data, error } = await supabase.rpc('peek_next_whatsapp_number', {
+        p_visitor_id: visitorId,
+      });
+      if (error) throw error;
+      const row = (Array.isArray(data) ? data[0] : data) as
+        | { number_id?: string; number_value?: string }
+        | null
+        | undefined;
+      if (row?.number_id && row?.number_value) {
+        setPeeked({ id: row.number_id, number: row.number_value });
+      } else {
+        setPeeked(null);
+      }
+    } catch (e) {
+      console.warn('peek_next_whatsapp_number:', e);
+      setPeeked(null);
+    }
+  }, [visitorId]);
 
   useEffect(() => {
     void loadActiveNumbers();
@@ -135,19 +202,51 @@ export function WhatsAppProvider({ children }: { children: React.ReactNode }) {
     }
   }, [numbers, assignedNumberId]);
 
-  const selectedNumber = useMemo(() => {
-    if (numbers.length === 0) return null;
+  useEffect(() => {
+    if (!rotationActive) {
+      setPeeked(null);
+      return;
+    }
+    void refetchPeek();
+  }, [numbers, rotationActive, visitorId, refetchPeek]);
 
-    if (assignedNumberId) {
-      const assigned = numbers.find((number) => number.id === assignedNumberId);
-      if (assigned) return assigned;
+  const selectedNumber = useMemo((): WhatsAppNumber | null => {
+    if (numbers.length > 0) {
+      if (rotationActive && peeked) {
+        const match = numbers.find((n) => n.id === peeked.id);
+        if (match) return match;
+        return {
+          id: peeked.id,
+          number: peeked.number,
+          label: '',
+          peso_distribuicao: 1,
+          click_count: 0,
+          order_index: 0,
+        };
+      }
+      if (assignedNumberId) {
+        const assigned = numbers.find((number) => number.id === assignedNumberId);
+        if (assigned) return assigned;
+      }
+      return selectByWeight(numbers);
     }
 
-    return selectByWeight(numbers);
-  }, [numbers, assignedNumberId]);
+    if (principalFallback) {
+      return {
+        id: FALLBACK_WHATSAPP_ID,
+        number: principalFallback,
+        label: 'Principal',
+        peso_distribuicao: 1,
+        click_count: 0,
+        order_index: 0,
+      };
+    }
+
+    return null;
+  }, [numbers, assignedNumberId, principalFallback, rotationActive, peeked]);
 
   const assignedNumber = selectedNumber?.number || '';
-  const available = numbers.length > 0;
+  const available = numbers.length > 0 || Boolean(principalFallback);
 
   const getWhatsAppUrl = useCallback(
     (message?: string) => {
@@ -162,6 +261,18 @@ export function WhatsAppProvider({ children }: { children: React.ReactNode }) {
       event?.preventDefault();
 
       const customMessage = getMessageFromHref(event?.currentTarget?.href);
+
+      const pool = numbersRef.current;
+      if (pool.length === 0) {
+        if (principalFallback) {
+          window.open(
+            buildWhatsAppUrl(principalFallback, customMessage),
+            '_blank',
+            'noopener,noreferrer',
+          );
+        }
+        return;
+      }
 
       try {
         const { data, error } = await (supabase as any).rpc('register_weighted_whatsapp_click', {
@@ -184,6 +295,7 @@ export function WhatsAppProvider({ children }: { children: React.ReactNode }) {
         );
 
         window.open(buildWhatsAppUrl(selected.number_value, customMessage), '_blank', 'noopener,noreferrer');
+        void refetchPeek();
       } catch (err) {
         console.error('Click tracking error:', err);
 
@@ -218,7 +330,7 @@ export function WhatsAppProvider({ children }: { children: React.ReactNode }) {
         }
       }
     },
-    [assignedNumberId, visitorId]
+    [assignedNumberId, visitorId, principalFallback, refetchPeek]
   );
 
   return (

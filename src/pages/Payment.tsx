@@ -8,6 +8,7 @@ import { CheckCircle, Copy, Clock, Loader2, QrCode, MessageCircle } from 'lucide
 import { toast } from 'sonner';
 import { QRCodeSVG } from 'qrcode.react';
 import { useWhatsApp } from '@/contexts/WhatsAppContext';
+import { WhatsAppFloatingButton } from '@/components/landing/WhatsAppFloatingButton';
 
 const Payment = () => {
   const { orderId } = useParams<{ orderId: string }>();
@@ -175,6 +176,7 @@ const Payment = () => {
         </div>
       </main>
       <SiteFooter />
+      <WhatsAppFloatingButton />
     </div>
   );
 };

@@ -1,5 +1,42 @@
 # Diagnóstico: 422 no login, deploy “não muda”, feature_collector
 
+## 0. Arranque rápido — CAPTCHA / Turnstile (erro 422 no `/admin`)
+
+O login envia o token do **Cloudflare Turnstile** para o Supabase. Três peças têm de bater:
+
+1. **Site** (público): `VITE_TURNSTILE_SITE_KEY` no `.env` da raiz → `node deploy/write-env-js.mjs .env /caminho/do/site/env.js` (ou `npm run deploy`).
+2. **Secret** (só no Supabase): **Authentication** → **Attack Protection** → Turnstile → mesma chave **Secret** do mesmo widget no painel Cloudflare.
+3. No `/admin`, marcar a caixa Turnstile **antes** de “Entrar”.
+
+**Chaves de teste Cloudflare** (úteis para desbloquear rápido; em produção forte use as suas no Cloudflare):
+
+| Onde | Valor |
+|------|--------|
+| Site Key (`.env` / `env.js`) | `1x00000000000000000000AA` |
+| Secret Key (só Supabase Attack Protection) | `1x0000000000000000000000000000000AA` |
+
+Se no Supabase estiver uma **Secret** de produção diferente, o token do site não valida: ou coloque no `.env` a **Site Key** do **mesmo** widget cuja Secret está no Supabase, ou troque a Secret no Supabase para corresponder ao widget que o site usa.
+
+**Sem CAPTCHA:** Supabase → Authentication → Attack Protection → desative proteção no **sign-in**.
+
+### Automático (Management API — sem abrir o painel)
+
+1. Crie um **Personal Access Token**: [Account → Access Tokens](https://supabase.com/dashboard/account/tokens) (permissões que permitam alterar a configuração de Auth do projeto).
+2. No servidor (ou PC), copie `deploy/supabase-management.example.env` → `deploy/supabase-management.env` e preencha `SUPABASE_ACCESS_TOKEN` e `SUPABASE_PROJECT_REF` (o ref é o subdomínio do URL, ex. `liuocutpghreoputefav`).
+3. Com o site já a usar a **Site Key de teste** `1x00000000000000000000AA`, alinhe o Supabase:
+
+   ```bash
+   npm run supabase:captcha-turnstile-test
+   ```
+
+   Ou desligue CAPTCHA por completo:
+
+   ```bash
+   npm run supabase:captcha-off
+   ```
+
+---
+
 ## 1. `feature_collector.js` — aviso amarelo
 
 **Não é o teu site.** É extensão do Chrome (ex.: Cursor, Grammarly).  

@@ -145,6 +145,12 @@ html {
   animation: whatsapp-pulse 2s infinite;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .whatsapp-float {
+    animation: none;
+  }
+}
+
 /* Counter animation */
 @keyframes count-up {
   from { opacity: 0; transform: translateY(16px); }

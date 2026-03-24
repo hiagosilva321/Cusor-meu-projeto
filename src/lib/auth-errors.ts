@@ -2,8 +2,9 @@
 export function mapSupabaseAuthError(message: string, httpStatus?: number): string {
   if (httpStatus === 422) {
     return (
-      'Login recusado (422). Tente: (1) confirme e-mail e senha; redefina no Supabase → Users → Reset password, ou no PC: npm run create-admin -- admin@email.com "SuaSenha". ' +
-      '(2) Se em Authentication → Attack Protection / CAPTCHA estiver proteção no sign-in, desligue-a — o painel não envia captcha e o servidor devolve 422.'
+      'Login recusado (422). Confirme e-mail e senha. Se o Supabase exige CAPTCHA no sign-in: marque a verificação (Turnstile) nesta página antes de Entrar; ' +
+      'no Supabase → Authentication → Attack Protection, a Secret Key do Turnstile tem de corresponder à Site Key do site (mesmo widget no Cloudflare). ' +
+      'Alternativa: desative CAPTCHA no sign-in nesse mesmo ecrã. Guia: deploy/DIAGNOSTICO-LOGIN-E-DEPLOY.md'
     );
   }
   const m = (message || '').toLowerCase();
