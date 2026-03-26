@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
-import { apiPost } from '@/lib/api';
+import { apiPost, getCacambaClientApiKey } from '@/lib/api';
 import { SiteHeader } from '@/components/landing/SiteHeader';
 import { SiteFooter } from '@/components/landing/SiteFooter';
 import { WhatsAppFloatingButton } from '@/components/landing/WhatsAppFloatingButton';
@@ -90,23 +90,31 @@ const Checkout = () => {
 
     setLoading(true);
     try {
-      const data = await apiPost('create-pix-charge', {
-        nome: form.nome.trim(),
-        whatsapp: form.whatsapp.trim(),
-        email: form.email.trim() || null,
-        cpf_cnpj: form.cpf_cnpj.trim() || null,
-        cep: form.cep.trim() || null,
-        endereco: form.endereco.trim() || null,
-        numero: form.numero.trim() || null,
-        complemento: form.complemento.trim() || null,
-        bairro: form.bairro.trim() || null,
-        cidade: form.cidade.trim() || null,
-        estado: form.estado.trim() || null,
-        tamanho: form.tamanho,
-        quantidade: parseInt(form.quantidade),
-        valor_unitario: selectedPrice,
-        observacoes: form.observacoes.trim() || null,
-      });
+      const pixHeaders = (() => {
+        const k = getCacambaClientApiKey();
+        return k ? { 'X-Cacamba-Client-Key': k } : undefined;
+      })();
+      const data = await apiPost(
+        'create-pix-charge',
+        {
+          nome: form.nome.trim(),
+          whatsapp: form.whatsapp.trim(),
+          email: form.email.trim() || null,
+          cpf_cnpj: form.cpf_cnpj.trim() || null,
+          cep: form.cep.trim() || null,
+          endereco: form.endereco.trim() || null,
+          numero: form.numero.trim() || null,
+          complemento: form.complemento.trim() || null,
+          bairro: form.bairro.trim() || null,
+          cidade: form.cidade.trim() || null,
+          estado: form.estado.trim() || null,
+          tamanho: form.tamanho,
+          quantidade: parseInt(form.quantidade),
+          valor_unitario: selectedPrice,
+          observacoes: form.observacoes.trim() || null,
+        },
+        pixHeaders,
+      );
 
       navigate(`/pagamento/${data.order_id}`);
     } catch (err: any) {

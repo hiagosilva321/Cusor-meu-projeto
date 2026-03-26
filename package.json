@@ -10,6 +10,7 @@
     "deploy:vps": "node deploy/prepare-deploy.mjs && node deploy/sync-dist-vps.mjs",
     "check:supabase": "node deploy/check-supabase-env.mjs",
     "create-admin": "node deploy/create-admin-user.mjs",
+    "seed:pedir": "node deploy/seed-pedir-client.mjs",
     "supabase:captcha-off": "node deploy/supabase-patch-auth-captcha.mjs off",
     "supabase:captcha-turnstile-test": "node deploy/supabase-patch-auth-captcha.mjs turnstile-test",
     "reset:whatsapp-tracking": "node deploy/reset-whatsapp-tracking.mjs",

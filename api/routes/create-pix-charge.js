@@ -1,4 +1,6 @@
 const { getSupabaseAdmin } = require('../lib/supabase');
+const { resolveFastsoftPostbackUrl } = require('../lib/fastsoft-postback-url');
+const { getClientByApiKey, getDefaultClientIdFromEnv, getClientById } = require('../lib/ceo-clients');
 const crypto = require('crypto');
 
 async function createPixCharge(req, res) {
@@ -35,8 +37,9 @@ async function createPixCharge(req, res) {
     const cleanDoc = (cpf_cnpj || '').replace(/\D/g, '');
     const docType = cleanDoc.length > 11 ? 'CNPJ' : 'CPF';
 
-    // URL do webhook — ajuste para seu domínio em produção
-    const webhookUrl = `${process.env.SUPABASE_URL ? process.env.SUPABASE_URL + '/functions/v1/fastsoft-webhook' : `http://localhost:${process.env.PORT || 3001}/api/fastsoft-webhook`}`;
+    // URL do webhook: ver api/lib/fastsoft-postback-url.js (PUBLIC_SITE_URL ou FASTSOFT_POSTBACK_URL em produção)
+    const webhookUrl = resolveFastsoftPostbackUrl();
+    console.log('[create-pix-charge] postbackUrl:', webhookUrl);
 
     // Payload FastSoft
     const payload = {
@@ -107,7 +110,22 @@ async function createPixCharge(req, res) {
     // Salvar pedido no banco
     const supabase = getSupabaseAdmin();
 
+    const headerKey = req.headers['x-cacamba-client-key'] || req.headers['X-Cacamba-Client-Key'];
+    let clientId = null;
+    if (headerKey) {
+      const c = await getClientByApiKey(supabase, String(headerKey));
+      if (!c) {
+        return res.status(401).json({ error: 'Chave de API do projeto inválida. Use o header X-Cacamba-Client-Key.' });
+      }
+      clientId = c.id;
+    } else {
+      const def = getDefaultClientIdFromEnv();
+      const row = await getClientById(supabase, def);
+      clientId = row ? row.id : null;
+    }
+
     const { data: order, error: dbError } = await supabase.from('orders').insert({
+      client_id: clientId,
       nome,
       whatsapp,
       email: email || '',

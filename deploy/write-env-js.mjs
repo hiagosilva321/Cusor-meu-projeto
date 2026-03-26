@@ -35,8 +35,10 @@ if (!url || !key) {
   );
 }
 const turnstile = (vars.VITE_TURNSTILE_SITE_KEY || "").trim();
+const cacambaClientApiKey = (vars.VITE_CACAMBA_CLIENT_API_KEY || "").trim();
 const envObj = { supabaseUrl: url, supabaseAnonKey: key };
 if (turnstile) envObj.turnstileSiteKey = turnstile;
+if (cacambaClientApiKey) envObj.cacambaClientApiKey = cacambaClientApiKey;
 const payload = JSON.stringify(envObj);
 fs.mkdirSync(path.dirname(outPath), { recursive: true });
 fs.writeFileSync(outPath, `window.__CACAMBAJA_ENV__=${payload};`, "utf8");

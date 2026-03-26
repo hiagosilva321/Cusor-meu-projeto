@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
+import { API_BASE } from '@/lib/api';
 import { SiteHeader } from '@/components/landing/SiteHeader';
 import { SiteFooter } from '@/components/landing/SiteFooter';
 import { Button } from '@/components/ui/button';
@@ -39,7 +40,7 @@ const Payment = () => {
       setLoading(false);
 
       if (data.payment_status === 'paid') {
-        navigate(`/pagamento-confirmado/${orderId}`);
+        navigate(`/obrigado/${orderId}`);
       }
     };
 
@@ -57,7 +58,7 @@ const Payment = () => {
         const updated = payload.new as any;
         setOrder(updated);
         if (updated.payment_status === 'paid') {
-          navigate(`/pagamento-confirmado/${orderId}`);
+          navigate(`/obrigado/${orderId}`);
         }
       })
       .subscribe();
@@ -66,6 +67,34 @@ const Payment = () => {
       supabase.removeChannel(channel);
     };
   }, [orderId, navigate]);
+
+  /** A cada 3s consulta a FastSoft (GET transação) via API e confirma pagamento se já estiver pago. */
+  useEffect(() => {
+    if (!orderId || !order || order.payment_status === 'paid') return;
+
+    let cancelled = false;
+
+    async function syncFromFastSoft() {
+      try {
+        const res = await fetch(`${API_BASE}/orders/${orderId}/sync-payment`);
+        const data = (await res.json()) as { payment_status?: string };
+        if (cancelled) return;
+        if (data.payment_status === 'paid') {
+          setOrder((o) => (o ? { ...o, payment_status: 'paid' } : o));
+          navigate(`/obrigado/${orderId}`);
+        }
+      } catch {
+        /* rede temporária — próximo intervalo */
+      }
+    }
+
+    void syncFromFastSoft();
+    const interval = setInterval(() => void syncFromFastSoft(), 3000);
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [orderId, order?.id, order?.payment_status, navigate]);
 
   // Countdown timer
   useEffect(() => {

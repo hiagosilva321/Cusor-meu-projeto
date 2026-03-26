@@ -7,8 +7,10 @@ import { Label } from '@/components/ui/label';
 import { Save, KeyRound, Mail } from 'lucide-react';
 import { toast } from 'sonner';
 import { mapSupabaseAuthError } from '@/lib/auth-errors';
+import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 
 export default function AdminSettings() {
+  const { refetch: refetchSiteBranding } = useSiteSettings();
   const [settings, setSettings] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -26,7 +28,12 @@ export default function AdminSettings() {
 
   useEffect(() => {
     async function fetch() {
-      const { data } = await supabase.from('site_settings').select('*').limit(1).single();
+      const { data } = await supabase
+        .from('site_settings')
+        .select('*')
+        .order('id', { ascending: true })
+        .limit(1)
+        .single();
       if (data) setSettings(data);
       const { data: { user } } = await supabase.auth.getUser();
       setAdminEmail(user?.email ?? null);
@@ -42,18 +49,38 @@ export default function AdminSettings() {
   const handleSave = async () => {
     if (!settings) return;
     setSaving(true);
-    const { error } = await supabase.from('site_settings').update({
-      site_name: settings.site_name,
-      telefone_principal: settings.telefone_principal,
-      whatsapp_principal: settings.whatsapp_principal,
-      endereco_empresa: settings.endereco_empresa,
-      email_contato: settings.email_contato,
-    }).eq('id', settings.id);
+    const { data, error } = await supabase
+      .from('site_settings')
+      .update({
+        site_name: settings.site_name,
+        telefone_principal: settings.telefone_principal,
+        whatsapp_principal: settings.whatsapp_principal,
+        endereco_empresa: settings.endereco_empresa,
+        email_contato: settings.email_contato,
+      })
+      .eq('id', settings.id)
+      .select('id, site_name')
+      .maybeSingle();
 
     if (error) {
-      toast.error('Erro ao salvar configurações');
+      toast.error(error.message || 'Erro ao salvar configurações');
+    } else if (!data) {
+      toast.error('Nenhuma linha atualizada. Verifique permissões (RLS) ou o id em site_settings.');
     } else {
-      toast.success('Configurações salvas!');
+      toast.success('Configurações salvas! A página inicial atualiza automaticamente.');
+      try {
+        localStorage.setItem('cacamba_site_settings_rev', String(Date.now()));
+      } catch {
+        /* privado */
+      }
+      try {
+        const bc = new BroadcastChannel('cacamba-site-settings');
+        bc.postMessage({ ok: true });
+        bc.close();
+      } catch {
+        /* */
+      }
+      await refetchSiteBranding();
     }
     setSaving(false);
   };

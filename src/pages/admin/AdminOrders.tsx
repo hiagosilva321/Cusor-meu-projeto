@@ -41,7 +41,12 @@ const AdminOrders = () => {
   };
 
   const updateStatus = async (id: string, status: string) => {
-    await supabase.from('orders').update({ status }).eq('id', id);
+    const patch: Record<string, unknown> = { status };
+    if (status === 'pago') {
+      patch.payment_status = 'paid';
+      patch.paid_at = new Date().toISOString();
+    }
+    await supabase.from('orders').update(patch).eq('id', id);
     fetchOrders();
   };
 

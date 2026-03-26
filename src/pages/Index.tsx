@@ -1,4 +1,7 @@
+import { useEffect } from 'react';
+import { SitePageTitle } from '@/components/landing/SitePageTitle';
 import { SiteHeader } from '@/components/landing/SiteHeader';
+import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import { HeroSection } from '@/components/landing/HeroSection';
 import { BenefitsSection } from '@/components/landing/BenefitsSection';
 import { OffersSection } from '@/components/landing/OffersSection';
@@ -14,8 +17,16 @@ import { SiteFooter } from '@/components/landing/SiteFooter';
 import { WhatsAppFloatingButton } from '@/components/landing/WhatsAppFloatingButton';
 
 const Index = () => {
+  const { refetch } = useSiteSettings();
+
+  /** Ao entrar na página principal (vindo do admin ou F5), volta a ler o nome do site na BD. */
+  useEffect(() => {
+    void refetch();
+  }, [refetch]);
+
   return (
     <div className="min-h-screen bg-background">
+      <SitePageTitle />
       <SiteHeader />
       <HeroSection />
       <BenefitsSection />

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useWhatsApp } from '@/contexts/WhatsAppContext';
+import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 import logoIcon from '@/assets/logo-icon.png';
 
 const navLinks = [
@@ -16,6 +17,7 @@ export function SiteHeader() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const { getWhatsAppUrl, trackClick, available } = useWhatsApp();
+  const { displayName } = useSiteSettings();
 
   useEffect(() => {
     const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -32,10 +34,10 @@ export function SiteHeader() {
       }`}
     >
       <div className="container flex items-center justify-between h-16 md:h-20">
-        <a href="#" className="flex items-center gap-2">
-          <img src={logoIcon} alt="Logo" className="h-8 w-8" />
-          <span className="font-display text-xl font-bold text-foreground">
-            Caçamba<span className="text-accent">Já</span>
+        <a href="#" className="flex items-center gap-2 min-w-0">
+          <img src={logoIcon} alt="" className="h-8 w-8 shrink-0" />
+          <span className="font-display text-xl font-bold text-foreground truncate max-w-[14rem] sm:max-w-[18rem] md:max-w-none">
+            {displayName}
           </span>
         </a>
 

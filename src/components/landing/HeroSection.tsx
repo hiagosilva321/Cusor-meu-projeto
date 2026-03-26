@@ -71,26 +71,26 @@ export function HeroSection() {
             transition={{ delay: 0.2 }}
             className="inline-block px-4 py-1.5 rounded-full bg-accent/20 text-accent text-sm font-semibold mb-6 backdrop-blur-sm border border-accent/30"
           >
-            ⚡ Atendimento rápido em São Paulo e Região
+            ⚡ São Paulo e região
           </motion.span>
 
           <motion.h1
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.6 }}
-            className="font-display text-4xl md:text-5xl lg:text-6xl font-extrabold text-primary-foreground leading-[1.1] mb-6 text-balance"
+            className="font-display text-3xl sm:text-4xl md:text-5xl lg:text-[2.65rem] xl:text-5xl font-extrabold text-primary-foreground leading-[1.12] mb-6 text-balance"
           >
-            Aluguel de caçambas com entrega{' '}
-            <span className="text-accent">rápida e segura</span>
+            Precisa de caçamba hoje?{' '}
+            <span className="text-accent">Resolva em 2 minutos pelo WhatsApp.</span>
           </motion.h1>
 
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="text-lg md:text-xl text-primary-foreground/80 mb-8 max-w-lg leading-relaxed"
+            className="text-lg md:text-xl text-primary-foreground/85 mb-8 max-w-lg leading-relaxed"
           >
-            Locação de caçambas estacionárias com entrega no mesmo dia, preço justo e descarte ambientalmente responsável.
+            Entrega rápida, preço justo e atendimento imediato.
           </motion.p>
 
           <motion.div
@@ -103,7 +103,7 @@ export function HeroSection() {
               <a href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer" onClick={trackClick}>
                 <Button variant="whatsapp" size="xl" className="w-full sm:w-auto">
                   <MessageCircle className="mr-2" />
-                  Pedir agora no WhatsApp
+                  Fale no WhatsApp agora
                 </Button>
               </a>
             )}

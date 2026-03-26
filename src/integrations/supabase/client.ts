@@ -7,6 +7,8 @@ declare global {
       supabaseUrl: string;
       supabaseAnonKey: string;
       turnstileSiteKey?: string;
+      /** Liga pedidos PIX ao cliente certo na API (hash na tabela ceo_clients). */
+      cacambaClientApiKey?: string;
     };
   }
 }

@@ -1,15 +1,17 @@
 import logoIcon from '@/assets/logo-icon.png';
+import { useSiteSettings } from '@/contexts/SiteSettingsContext';
 
 export function SiteFooter() {
+  const { displayName } = useSiteSettings();
   return (
     <footer className="bg-primary py-12">
       <div className="container">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <img src={logoIcon} alt="Logo" className="h-8 w-8" />
-              <span className="font-display text-xl font-bold text-primary-foreground">
-                Caçamba<span className="text-accent">Já</span>
+            <div className="flex items-center gap-2 mb-4 min-w-0">
+              <img src={logoIcon} alt="" className="h-8 w-8 shrink-0" />
+              <span className="font-display text-xl font-bold text-primary-foreground break-words">
+                {displayName}
               </span>
             </div>
             <p className="text-primary-foreground/60 text-sm max-w-xs">
@@ -40,7 +42,7 @@ export function SiteFooter() {
 
         <div className="border-t border-primary-foreground/10 pt-8 text-center">
           <p className="text-sm text-primary-foreground/40">
-            © {new Date().getFullYear()} CaçambaJá. Todos os direitos reservados.
+            © {new Date().getFullYear()} {displayName}. Todos os direitos reservados.
           </p>
         </div>
       </div>

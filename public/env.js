@@ -4,4 +4,5 @@ window.__CACAMBAJA_ENV__ = window.__CACAMBAJA_ENV__ || {
   supabaseUrl: "",
   supabaseAnonKey: "",
   turnstileSiteKey: "1x00000000000000000000AA",
+  cacambaClientApiKey: "",
 };

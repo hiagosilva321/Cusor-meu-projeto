@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { supabase } from '@/integrations/supabase/client';
-import { Users, MousePointer, MessageCircle, Package, TrendingUp } from 'lucide-react';
+import { Users, MousePointer, MessageCircle, Package, TrendingUp, Banknote, CheckCircle } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 interface ClickStat {
@@ -13,27 +13,55 @@ interface ClickStat {
   clicks_week: number;
 }
 
+/** PIX confirmado ou pedido com status "Pago" no admin — alinhado ao painel CEO. */
+const PAID_ORDERS_FILTER = 'payment_status.eq.paid,status.eq.pago';
+
 export default function AdminDashboard() {
-  const [stats, setStats] = useState({ leads: 0, clicks: 0, numbers: 0, sizes: 0 });
+  const [stats, setStats] = useState({
+    leads: 0,
+    clicks: 0,
+    numbers: 0,
+    sizes: 0,
+    paidOrders: 0,
+    revenuePaid: 0,
+  });
   const [recentLeads, setRecentLeads] = useState<any[]>([]);
   const [clickStats, setClickStats] = useState<ClickStat[]>([]);
 
   useEffect(() => {
     async function fetchData() {
-      const [leadsRes, clicksRes, numbersRes, sizesRes, recentRes, clickStatsRes] = await Promise.all([
+      const [
+        leadsRes,
+        clicksRes,
+        numbersRes,
+        sizesRes,
+        recentRes,
+        clickStatsRes,
+        paidOrdersRes,
+        paidTotalsRes,
+      ] = await Promise.all([
         supabase.from('leads').select('id', { count: 'exact', head: true }),
         supabase.from('whatsapp_clicks').select('id', { count: 'exact', head: true }),
         supabase.from('whatsapp_numbers').select('id', { count: 'exact', head: true }).eq('active', true),
         supabase.from('dumpster_sizes').select('id', { count: 'exact', head: true }).eq('active', true),
         supabase.from('leads').select('*').order('created_at', { ascending: false }).limit(5),
         supabase.rpc('get_click_stats'),
+        supabase.from('orders').select('id', { count: 'exact', head: true }).or(PAID_ORDERS_FILTER),
+        supabase.from('orders').select('valor_total').or(PAID_ORDERS_FILTER),
       ]);
+
+      const revenuePaid = (paidTotalsRes.data || []).reduce(
+        (acc, r: { valor_total: number | null }) => acc + (Number(r.valor_total) || 0),
+        0,
+      );
 
       setStats({
         leads: leadsRes.count || 0,
         clicks: clicksRes.count || 0,
         numbers: numbersRes.count || 0,
         sizes: sizesRes.count || 0,
+        paidOrders: paidOrdersRes.count || 0,
+        revenuePaid,
       });
       setRecentLeads(recentRes.data || []);
       setClickStats((clickStatsRes.data as ClickStat[]) || []);
@@ -41,7 +69,12 @@ export default function AdminDashboard() {
     fetchData();
   }, []);
 
+  const brl = (n: number) =>
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(n);
+
   const statCards = [
+    { label: 'Faturamento (pagos)', value: brl(stats.revenuePaid), icon: Banknote, color: 'bg-whatsapp/10 text-whatsapp' },
+    { label: 'Pedidos pagos', value: stats.paidOrders, icon: CheckCircle, color: 'bg-green-600/10 text-green-700' },
     { label: 'Total de Leads', value: stats.leads, icon: Users, color: 'bg-accent/10 text-accent' },
     { label: 'Cliques WhatsApp', value: stats.clicks, icon: MousePointer, color: 'bg-whatsapp/10 text-whatsapp' },
     { label: 'Números Ativos', value: stats.numbers, icon: MessageCircle, color: 'bg-primary/10 text-primary' },
@@ -51,7 +84,7 @@ export default function AdminDashboard() {
   return (
     <AdminLayout title="Dashboard">
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-8">
         {statCards.map((stat) => (
           <div key={stat.label} className="p-5 rounded-xl bg-card border shadow-sm">
             <div className="flex items-center justify-between mb-3">
@@ -60,7 +93,7 @@ export default function AdminDashboard() {
                 <stat.icon size={20} />
               </div>
             </div>
-            <span className="font-display text-3xl font-bold text-foreground">{stat.value}</span>
+            <span className="font-display text-3xl font-bold text-foreground tabular-nums">{stat.value}</span>
           </div>
         ))}
       </div>

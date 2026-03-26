@@ -4,6 +4,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { SiteSettingsProvider } from "@/contexts/SiteSettingsContext";
 import { WhatsAppProvider } from "@/contexts/WhatsAppContext";
 import { AdminThemeProvider } from "@/contexts/AdminThemeContext";
 import Index from "./pages/Index.tsx";
@@ -22,6 +23,9 @@ const AdminWhatsApp = lazy(() => import("./pages/admin/AdminWhatsApp.tsx"));
 const AdminCounters = lazy(() => import("./pages/admin/AdminCounters.tsx"));
 const AdminRegions = lazy(() => import("./pages/admin/AdminRegions.tsx"));
 const AdminSettings = lazy(() => import("./pages/admin/AdminSettings.tsx"));
+const CeoArea = lazy(() => import("./pages/ceo/CeoArea.tsx"));
+const CeoStrategicView = lazy(() => import("./pages/ceo/CeoStrategicView.tsx"));
+const CeoAccessSettings = lazy(() => import("./pages/ceo/CeoAccessSettings.tsx"));
 
 const PageLoader = () => (
   <div className="flex min-h-[100dvh] min-h-screen w-full items-center justify-center bg-muted text-muted-foreground">
@@ -40,6 +44,7 @@ const App = () => (
     <TooltipProvider>
       <Toaster />
       <Sonner />
+      <SiteSettingsProvider>
       <WhatsAppProvider>
         <BrowserRouter>
           <AdminThemeProvider>
@@ -48,6 +53,7 @@ const App = () => (
               <Route path="/" element={<Index />} />
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/pagamento/:orderId" element={<Payment />} />
+              <Route path="/obrigado/:orderId" element={<PaymentConfirmed />} />
               <Route path="/pagamento-confirmado/:orderId" element={<PaymentConfirmed />} />
               <Route path="/admin" element={<AdminLogin />} />
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
@@ -59,12 +65,17 @@ const App = () => (
               <Route path="/admin/counters" element={<AdminCounters />} />
               <Route path="/admin/regions" element={<AdminRegions />} />
               <Route path="/admin/settings" element={<AdminSettings />} />
+              <Route path="/hashadmin1" element={<CeoArea />}>
+                <Route index element={<CeoStrategicView />} />
+                <Route path="acesso" element={<CeoAccessSettings />} />
+              </Route>
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
           </AdminThemeProvider>
         </BrowserRouter>
       </WhatsAppProvider>
+      </SiteSettingsProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
