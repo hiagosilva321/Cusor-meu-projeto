@@ -5,6 +5,10 @@ import type { Tables } from '@/integrations/supabase/types';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
@@ -22,8 +26,14 @@ import {
   Loader2,
   RefreshCw,
   Undo2,
+  Plus,
+  CreditCard,
+  Copy,
+  CheckCircle,
 } from 'lucide-react';
 import { getTransaction, refundTransaction } from '@/lib/fastsoft-api';
+import { apiPost, type CreatePixChargeRequest, type CreatePixChargeResponse } from '@/lib/api';
+import { maskPhone, maskCpfCnpj, maskCep, unmask } from '@/lib/masks';
 import { toast } from 'sonner';
 
 // ---------------------------------------------------------------------------
@@ -187,6 +197,13 @@ export default function AdminPedidos() {
   // -----------------------------------------------------------------------
   return (
     <AdminLayout title="Pedidos">
+      <Tabs defaultValue="lista" className="w-full">
+        <TabsList className="mb-6">
+          <TabsTrigger value="lista">Todos os Pedidos</TabsTrigger>
+          <TabsTrigger value="novo" className="gap-1.5"><Plus size={14} /> Gerar Pedido PIX</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="lista">
       <div className="space-y-6">
         {/* ------------------------------------------------------------- */}
         {/* Filter Bar                                                     */}
@@ -409,7 +426,279 @@ export default function AdminPedidos() {
           )}
         </div>
       </div>
+        </TabsContent>
+
+        <TabsContent value="novo">
+          <NewOrderForm onCreated={fetchOrders} />
+        </TabsContent>
+      </Tabs>
     </AdminLayout>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// New Order Form sub-component
+// ---------------------------------------------------------------------------
+
+interface SizeOption { size: string; title: string; price: number; }
+
+function NewOrderForm({ onCreated }: { onCreated: () => void }) {
+  const [sizes, setSizes] = useState<SizeOption[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<{ orderId: string; token: string; pixCode: string | null; pixQr: string | null; expires: string } | null>(null);
+  const [form, setForm] = useState({
+    nome: '', whatsapp: '', email: '', cpf_cnpj: '',
+    cep: '', endereco: '', numero: '', complemento: '',
+    bairro: '', cidade: '', estado: '',
+    tamanho: '', quantidade: '1', observacoes: '',
+    referral_source: '',
+  });
+
+  useEffect(() => {
+    supabase.from('dumpster_sizes').select('size, title, price').eq('active', true).order('order_index')
+      .then(({ data }) => {
+        if (data?.length) {
+          setSizes(data);
+          setForm(f => ({ ...f, tamanho: data[0].size }));
+        }
+      });
+  }, []);
+
+  const selectedPrice = sizes.find(s => s.size === form.tamanho)?.price || 0;
+  const valorTotal = selectedPrice * parseInt(form.quantidade || '1');
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    let masked = value;
+    if (name === 'whatsapp') masked = maskPhone(value);
+    else if (name === 'cpf_cnpj') masked = maskCpfCnpj(value);
+    else if (name === 'cep') masked = maskCep(value);
+    setForm(prev => ({ ...prev, [name]: masked }));
+
+    if (name === 'cep' && unmask(value).length === 8) {
+      fetch(`https://viacep.com.br/ws/${unmask(value)}/json/`)
+        .then(r => r.json())
+        .then(d => { if (!d.erro) setForm(prev => ({ ...prev, endereco: d.logradouro || '', bairro: d.bairro || '', cidade: d.localidade || '', estado: d.uf || '' })); })
+        .catch(() => {});
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.nome.trim() || unmask(form.whatsapp).length < 10) { toast.error('Preencha nome e WhatsApp.'); return; }
+    if (!form.tamanho) { toast.error('Selecione o tamanho.'); return; }
+
+    setLoading(true);
+    setResult(null);
+    try {
+      const body: CreatePixChargeRequest = {
+        nome: form.nome.trim(),
+        whatsapp: unmask(form.whatsapp),
+        email: form.email.trim() || null,
+        cpf_cnpj: unmask(form.cpf_cnpj) || null,
+        cep: unmask(form.cep) || null,
+        endereco: form.endereco.trim() || null,
+        numero: form.numero.trim() || null,
+        complemento: form.complemento.trim() || null,
+        bairro: form.bairro.trim() || null,
+        cidade: form.cidade.trim() || null,
+        estado: form.estado.trim() || null,
+        tamanho: form.tamanho,
+        quantidade: parseInt(form.quantidade),
+        valor_unitario: selectedPrice,
+        observacoes: form.observacoes.trim() || null,
+        data_entrega: null,
+        horario_entrega: null,
+        referral_source: form.referral_source.trim() || null,
+      };
+
+      const data = await apiPost<CreatePixChargeResponse, CreatePixChargeRequest>('create-pix-charge', body);
+
+      setResult({
+        orderId: data.order_id,
+        token: data.order_token,
+        pixCode: data.pix_copy_paste,
+        pixQr: data.pix_qr_code,
+        expires: data.expires_at,
+      });
+
+      // Fire-and-forget lead
+      supabase.from('leads').insert({
+        nome: form.nome.trim(), whatsapp: unmask(form.whatsapp),
+        email: form.email.trim() || '', cpf_cnpj: unmask(form.cpf_cnpj) || '',
+        cep: unmask(form.cep) || '', endereco: form.endereco.trim() || '',
+        numero: form.numero.trim() || '', complemento: form.complemento.trim() || '',
+        bairro: form.bairro.trim() || '', cidade: form.cidade.trim() || '',
+        estado: form.estado.trim() || '', tamanho: form.tamanho,
+        quantidade: parseInt(form.quantidade), observacoes: form.observacoes.trim() || '',
+        status: 'Não pago', order_id: data.order_id,
+      }).then(({ error }) => { if (error) console.error('[Lead]', error); });
+
+      toast.success('Pedido PIX gerado!');
+      onCreated();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Erro ao gerar PIX.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const paymentLink = result ? `${window.location.origin}/pagamento/${result.orderId}?token=${result.token}` : '';
+
+  const copyLink = () => {
+    navigator.clipboard.writeText(paymentLink);
+    toast.success('Link copiado!');
+  };
+
+  const copyPix = () => {
+    if (result?.pixCode) {
+      navigator.clipboard.writeText(result.pixCode);
+      toast.success('Código PIX copiado!');
+    }
+  };
+
+  const selectClasses = "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
+
+  if (result) {
+    return (
+      <div className="max-w-xl mx-auto space-y-6">
+        <Card>
+          <CardContent className="p-6 space-y-5">
+            <div className="text-center">
+              <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-3">
+                <CheckCircle className="text-green-600" size={32} />
+              </div>
+              <h3 className="font-display text-xl font-bold text-foreground">Pedido PIX Gerado</h3>
+              <p className="text-sm text-muted-foreground mt-1">
+                {form.nome} — {form.tamanho} x{form.quantidade} — {formatBRL(valorTotal)}
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <div className="space-y-1.5">
+                <Label>Link de pagamento</Label>
+                <div className="flex gap-2">
+                  <Input readOnly value={paymentLink} className="bg-muted text-xs font-mono" />
+                  <Button variant="outline" size="sm" onClick={copyLink} className="shrink-0">
+                    <Copy size={14} className="mr-1.5" /> Copiar
+                  </Button>
+                </div>
+              </div>
+
+              {result.pixCode && (
+                <div className="space-y-1.5">
+                  <Label>PIX Copia e Cola</Label>
+                  <div className="flex gap-2">
+                    <Input readOnly value={result.pixCode} className="bg-muted text-xs font-mono" />
+                    <Button variant="outline" size="sm" onClick={copyPix} className="shrink-0">
+                      <Copy size={14} className="mr-1.5" /> Copiar
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs text-muted-foreground">
+                Expira em: {new Date(result.expires).toLocaleString('pt-BR')}
+              </p>
+            </div>
+
+            <Button variant="outline" className="w-full" onClick={() => { setResult(null); setForm(f => ({ ...f, nome: '', whatsapp: '', email: '', cpf_cnpj: '', cep: '', endereco: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '', observacoes: '', referral_source: '' })); }}>
+              Gerar novo pedido
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto">
+      <Card>
+        <CardContent className="p-6">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div>
+              <h3 className="font-display text-base font-bold text-foreground mb-3">Dados do Cliente</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>Nome *</Label>
+                  <Input name="nome" placeholder="Nome completo" value={form.nome} onChange={handleChange} required />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>WhatsApp *</Label>
+                  <Input name="whatsapp" placeholder="(11) 99999-9999" value={form.whatsapp} onChange={handleChange} maxLength={15} required />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>E-mail</Label>
+                  <Input name="email" placeholder="email@exemplo.com" type="email" value={form.email} onChange={handleChange} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>CPF/CNPJ</Label>
+                  <Input name="cpf_cnpj" placeholder="000.000.000-00" value={form.cpf_cnpj} onChange={handleChange} maxLength={18} />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-display text-base font-bold text-foreground mb-3">Endereço</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <Label>CEP</Label>
+                  <Input name="cep" placeholder="00000-000" value={form.cep} onChange={handleChange} maxLength={9} />
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label>Endereço</Label>
+                  <Input name="endereco" placeholder="Rua, Avenida..." value={form.endereco} onChange={handleChange} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Número</Label>
+                  <Input name="numero" placeholder="Nº" value={form.numero} onChange={handleChange} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Bairro</Label>
+                  <Input name="bairro" placeholder="Bairro" value={form.bairro} onChange={handleChange} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Cidade</Label>
+                  <Input name="cidade" placeholder="Cidade" value={form.cidade} onChange={handleChange} />
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="font-display text-base font-bold text-foreground mb-3">Pedido</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <Label>Tamanho *</Label>
+                  <select name="tamanho" value={form.tamanho} onChange={handleChange} className={selectClasses}>
+                    {sizes.map(s => <option key={s.size} value={s.size}>{s.size} — {s.title} (R$ {s.price.toFixed(2)})</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Quantidade</Label>
+                  <select name="quantidade" value={form.quantidade} onChange={handleChange} className={selectClasses}>
+                    {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Origem (ref)</Label>
+                  <Input name="referral_source" placeholder="joao, maria..." value={form.referral_source} onChange={handleChange} />
+                </div>
+              </div>
+              <Textarea name="observacoes" placeholder="Observações (opcional)" value={form.observacoes} onChange={handleChange} rows={2} className="mt-4" />
+            </div>
+
+            <div className="flex items-center justify-between p-4 rounded-xl bg-muted">
+              <span className="text-sm text-muted-foreground">Total:</span>
+              <span className="text-2xl font-bold text-foreground">{formatBRL(valorTotal)}</span>
+            </div>
+
+            <Button type="submit" size="lg" className="w-full gap-2" disabled={loading}>
+              {loading ? <><Loader2 size={18} className="animate-spin" /> Gerando PIX...</> : <><CreditCard size={18} /> Gerar Pedido PIX</>}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
