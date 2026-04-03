@@ -14,6 +14,7 @@ import { useWhatsApp } from '@/contexts/WhatsAppContext';
 import {
   ShoppingCart, MapPin, User, CreditCard, Loader2,
   CalendarDays, Check, AlertCircle, ChevronRight, ChevronLeft,
+  Tag, X,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -50,6 +51,11 @@ const Checkout = () => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [helperPrice, setHelperPrice] = useState(125);
   const [ajudantes, setAjudantes] = useState(0);
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState('');
+  const [appliedDiscount, setAppliedDiscount] = useState(0);
+  const [couponError, setCouponError] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
   const [form, setForm] = useState({
     nome: '', whatsapp: '', email: '', cpf_cnpj: '',
     cep: '', endereco: '', numero: '', complemento: '',
@@ -130,8 +136,44 @@ const Checkout = () => {
 
   const valorCacamba = selectedPrice * parseInt(form.quantidade || '1');
   const valorAjudantes = ajudantes * helperPrice;
-  const valorTotal = valorCacamba + valorAjudantes;
+  const subtotal = valorCacamba + valorAjudantes;
+  const valorDesconto = Math.round(subtotal * (appliedDiscount / 100) * 100) / 100;
+  const valorTotal = subtotal - valorDesconto;
   const sizesReady = sizeOptions.length > 0 && Boolean(form.tamanho);
+
+  const handleApplyCoupon = async () => {
+    const code = couponInput.trim().toUpperCase();
+    if (!code) {
+      setCouponError('Digite um codigo de cupom.');
+      return;
+    }
+    setCouponLoading(true);
+    setCouponError('');
+    try {
+      const { data, error } = await supabase.rpc('validate_coupon', { p_code: code });
+      if (error || !data || data.length === 0) {
+        setCouponError('Cupom invalido ou expirado.');
+        setAppliedCoupon('');
+        setAppliedDiscount(0);
+      } else {
+        setAppliedCoupon(code);
+        setAppliedDiscount(data[0].discount_percent);
+        setCouponError('');
+        toast.success(`Cupom ${code} aplicado com ${data[0].discount_percent}% de desconto!`);
+      }
+    } catch {
+      setCouponError('Erro ao validar cupom. Tente novamente.');
+    } finally {
+      setCouponLoading(false);
+    }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon('');
+    setAppliedDiscount(0);
+    setCouponInput('');
+    setCouponError('');
+  };
 
   const validateStep = (targetStep: number): boolean => {
     if (targetStep === 1 && !sizesReady) {
@@ -178,6 +220,9 @@ const Checkout = () => {
         referral_source: referralSource,
         ajudantes,
         valor_ajudantes: valorAjudantes,
+        coupon_code: appliedCoupon || null,
+        discount_percent: appliedDiscount || undefined,
+        valor_desconto: valorDesconto || undefined,
       };
       const data = await apiPost<CreatePixChargeResponse, CreatePixChargeRequest>('create-pix-charge', body);
       supabase.from('leads').insert({
@@ -335,6 +380,50 @@ const Checkout = () => {
                               {[1, 2, 3, 4].map(n => <option key={n} value={n}>{n} ajudante{n > 1 ? 's' : ''} (+R$ {(n * helperPrice).toFixed(0)})</option>)}
                             </select>
                           </div>
+                        </div>
+
+                        {/* Coupon */}
+                        <div className="pt-5 mt-2 rounded-xl bg-white/[0.02] px-4 pb-4 -mx-1">
+                          <h3 className="font-display text-sm font-bold text-white flex items-center gap-2 mb-4">
+                            <Tag size={14} className="text-[#f2c36b]" />
+                            <span className="uppercase tracking-wider">Codigo de desconto</span>
+                          </h3>
+                          {appliedCoupon ? (
+                            <div className="flex items-center gap-3">
+                              <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-[#1FAD4E]/15 border border-[#1FAD4E]/30">
+                                <Check size={14} className="text-[#1FAD4E]" />
+                                <span className="text-sm font-semibold text-[#5ddf79]">{appliedCoupon}</span>
+                                <span className="text-xs text-[#5ddf79]/80">{appliedDiscount}% aplicado</span>
+                              </div>
+                              <button type="button" onClick={removeCoupon}
+                                className="flex items-center gap-1 px-2 py-1.5 rounded-lg text-xs text-[#ffb4ab] hover:bg-[#ffb4ab]/10 transition-colors">
+                                <X size={12} /> Remover
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="space-y-2">
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  placeholder="Ex: PRIMEIRA10"
+                                  value={couponInput}
+                                  onChange={(e) => { setCouponInput(e.target.value.toUpperCase()); setCouponError(''); }}
+                                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleApplyCoupon())}
+                                  maxLength={30}
+                                  className={`${inputDark} flex-1`}
+                                />
+                                <button type="button" onClick={handleApplyCoupon} disabled={couponLoading}
+                                  className="px-5 py-2.5 rounded-lg text-sm font-semibold transition-all duration-200 bg-white/[0.08] text-[#d7e3fc] hover:bg-white/[0.12] disabled:opacity-40 disabled:cursor-not-allowed whitespace-nowrap">
+                                  {couponLoading ? <Loader2 size={14} className="animate-spin" /> : 'Aplicar'}
+                                </button>
+                              </div>
+                              {couponError && (
+                                <span className="text-xs text-[#ffb4ab] flex items-center gap-1">
+                                  <AlertCircle size={11} /> {couponError}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
 
                         {/* Scheduling */}
@@ -499,6 +588,19 @@ const Checkout = () => {
                       <span className="text-[#d2c5b2]">Ajudantes ({ajudantes}x)</span>
                       <span className="text-white">R$ {valorAjudantes.toFixed(2)}</span>
                     </div>
+                  )}
+                  {appliedDiscount > 0 && (
+                    <>
+                      <div className="h-px bg-white/[0.06]" />
+                      <div className="flex justify-between">
+                        <span className="text-[#d2c5b2]">Subtotal</span>
+                        <span className="text-white">R$ {subtotal.toFixed(2)}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-[#5ddf79]">Desconto ({appliedDiscount}%)</span>
+                        <span className="text-[#5ddf79] font-semibold">-R$ {valorDesconto.toFixed(2)}</span>
+                      </div>
+                    </>
                   )}
                   <div className="h-px bg-white/[0.06]" />
                   <div className="flex justify-between items-baseline">

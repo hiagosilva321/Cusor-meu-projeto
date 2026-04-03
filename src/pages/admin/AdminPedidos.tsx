@@ -764,9 +764,27 @@ function OrderDetail({ order }: { order: Order }) {
       <div className="grid grid-cols-2 gap-x-4 gap-y-2">
         <div className="text-muted-foreground">Caçamba</div>
         <div className="font-medium">{order.tamanho} x{order.quantidade}</div>
-        <div className="text-muted-foreground">Valor unitário</div>
+        <div className="text-muted-foreground">Valor unitario</div>
         <div>{formatBRL(Number(order.valor_unitario))}</div>
-        <div className="text-muted-foreground">Valor total</div>
+        {order.coupon_code && (
+          <>
+            <div className="text-muted-foreground">Cupom</div>
+            <div>
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                {order.coupon_code} ({order.discount_percent}%)
+              </Badge>
+            </div>
+          </>
+        )}
+        {order.valor_desconto != null && Number(order.valor_desconto) > 0 && (
+          <>
+            <div className="text-muted-foreground">Valor original</div>
+            <div>{formatBRL(Number(order.valor_total) + Number(order.valor_desconto))}</div>
+            <div className="text-muted-foreground">Desconto</div>
+            <div className="text-green-600 font-medium">-{formatBRL(Number(order.valor_desconto))}</div>
+          </>
+        )}
+        <div className="text-muted-foreground">Valor cobrado</div>
         <div className="font-medium">{formatBRL(Number(order.valor_total))}</div>
         <div className="text-muted-foreground">Forma de pagamento</div>
         <div>{order.forma_pagamento}</div>

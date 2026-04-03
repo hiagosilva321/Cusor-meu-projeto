@@ -23,6 +23,9 @@ export interface CreatePixChargeRequest {
   referral_source?: string | null;
   ajudantes?: number;
   valor_ajudantes?: number;
+  coupon_code?: string | null;
+  discount_percent?: number;
+  valor_desconto?: number;
 }
 
 export interface CreatePixChargeResponse {

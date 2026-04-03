@@ -22,7 +22,7 @@ serve(async (req) => {
   }
 
   try {
-    const { nome, whatsapp, email, cpf_cnpj, cep, endereco, numero, complemento, bairro, cidade, estado, tamanho, quantidade, valor_unitario, observacoes, data_entrega, horario_entrega, referral_source, ajudantes, valor_ajudantes } = await req.json();
+    const { nome, whatsapp, email, cpf_cnpj, cep, endereco, numero, complemento, bairro, cidade, estado, tamanho, quantidade, valor_unitario, observacoes, data_entrega, horario_entrega, referral_source, ajudantes, valor_ajudantes, coupon_code, discount_percent: clientDiscount, valor_desconto: clientValorDesconto } = await req.json();
 
     if (!nome || !whatsapp || !tamanho || !valor_unitario) {
       return new Response(JSON.stringify({ error: 'Campos obrigatorios: nome, whatsapp, tamanho, valor_unitario' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
@@ -34,7 +34,30 @@ serve(async (req) => {
     if (typeof valor_unitario !== 'number' || valor_unitario <= 0 || valor_unitario > 100000) {
       return new Response(JSON.stringify({ error: 'Valor unitario invalido.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
-    const valor_total = (valor_unitario * qtd) + totalAjudantes;
+
+    // ── Server-side coupon validation ──
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const subtotal = (valor_unitario * qtd) + totalAjudantes;
+    let valorDesconto = 0;
+    let validatedDiscount = 0;
+    let validatedCouponCode: string | null = null;
+
+    if (coupon_code) {
+      const { data: couponData } = await supabase.rpc('validate_coupon', { p_code: coupon_code });
+      if (couponData && couponData.length > 0) {
+        validatedDiscount = couponData[0].discount_percent;
+        validatedCouponCode = String(coupon_code).toUpperCase();
+        valorDesconto = Math.round(subtotal * (validatedDiscount / 100) * 100) / 100;
+        console.log(`[CREATE-PIX] Coupon ${validatedCouponCode} validated: ${validatedDiscount}% off, discount R$ ${valorDesconto}`);
+      } else {
+        console.log(`[CREATE-PIX] Coupon ${coupon_code} invalid or expired, ignoring`);
+      }
+    }
+
+    const valor_total = subtotal - valorDesconto;
     const amount = Math.round(valor_total * 100); // centavos
 
     const FASTSOFT_SECRET_KEY = Deno.env.get('FASTSOFT_SECRET_KEY');
@@ -145,10 +168,6 @@ serve(async (req) => {
       || new Date(Date.now() + 86400000).toISOString();
 
     // Salvar pedido no banco
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
     const { data: order, error: dbError } = await supabase.from('orders').insert({
       nome,
       whatsapp,
@@ -180,11 +199,30 @@ serve(async (req) => {
       referral_source: referral_source || null,
       ajudantes: numAjudantes,
       valor_ajudantes: totalAjudantes,
+      coupon_code: validatedCouponCode,
+      discount_percent: validatedDiscount || null,
+      valor_desconto: valorDesconto || null,
     }).select().single();
 
     if (dbError) {
       console.error('DB error:', dbError);
       throw dbError;
+    }
+
+    // Increment coupon usage after successful order creation
+    if (validatedCouponCode && validatedDiscount > 0) {
+      const { data: currentCoupon } = await supabase
+        .from('coupons')
+        .select('current_uses')
+        .eq('code', validatedCouponCode)
+        .single();
+      if (currentCoupon) {
+        await supabase
+          .from('coupons')
+          .update({ current_uses: currentCoupon.current_uses + 1 })
+          .eq('code', validatedCouponCode);
+        console.log(`[CREATE-PIX] Coupon ${validatedCouponCode} usage incremented to ${currentCoupon.current_uses + 1}`);
+      }
     }
 
     return new Response(JSON.stringify({

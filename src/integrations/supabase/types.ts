@@ -14,6 +14,42 @@ export type Database = {
   }
   public: {
     Tables: {
+      coupons: {
+        Row: {
+          id: string
+          code: string
+          discount_percent: number
+          active: boolean
+          max_uses: number | null
+          current_uses: number
+          description: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          code: string
+          discount_percent: number
+          active?: boolean
+          max_uses?: number | null
+          current_uses?: number
+          description?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          code?: string
+          discount_percent?: number
+          active?: boolean
+          max_uses?: number | null
+          current_uses?: number
+          description?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       admin_users: {
         Row: {
           auth_user_id: string
@@ -147,9 +183,11 @@ export type Database = {
           cep: string | null
           cidade: string | null
           complemento: string | null
+          coupon_code: string | null
           cpf_cnpj: string | null
           created_at: string
           data_entrega: string | null
+          discount_percent: number | null
           email: string | null
           endereco: string | null
           estado: string | null
@@ -174,6 +212,7 @@ export type Database = {
           tamanho: string
           updated_at: string
           valor_ajudantes: number
+          valor_desconto: number | null
           valor_total: number
           valor_unitario: number
           whatsapp: string
@@ -184,9 +223,11 @@ export type Database = {
           cep?: string | null
           cidade?: string | null
           complemento?: string | null
+          coupon_code?: string | null
           cpf_cnpj?: string | null
           created_at?: string
           data_entrega?: string | null
+          discount_percent?: number | null
           email?: string | null
           endereco?: string | null
           estado?: string | null
@@ -211,6 +252,7 @@ export type Database = {
           tamanho: string
           updated_at?: string
           valor_ajudantes?: number
+          valor_desconto?: number | null
           valor_total?: number
           valor_unitario?: number
           whatsapp: string
@@ -221,9 +263,11 @@ export type Database = {
           cep?: string | null
           cidade?: string | null
           complemento?: string | null
+          coupon_code?: string | null
           cpf_cnpj?: string | null
           created_at?: string
           data_entrega?: string | null
+          discount_percent?: number | null
           email?: string | null
           endereco?: string | null
           estado?: string | null
@@ -248,6 +292,7 @@ export type Database = {
           tamanho?: string
           updated_at?: string
           valor_ajudantes?: number
+          valor_desconto?: number | null
           valor_total?: number
           valor_unitario?: number
           whatsapp?: string
@@ -511,6 +556,13 @@ export type Database = {
       is_admin_user: {
         Args: never
         Returns: boolean
+      }
+      validate_coupon: {
+        Args: { p_code: string }
+        Returns: {
+          coupon_id: string
+          discount_percent: number
+        }[]
       }
     }
     Enums: {
