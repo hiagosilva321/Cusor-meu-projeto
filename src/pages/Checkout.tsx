@@ -271,30 +271,36 @@ const Checkout = () => {
                         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
                           {sizeOptions.map((s) => {
                             const selected = form.tamanho === s.size;
+                            const isPopular = s.size === '5m³';
                             return (
                               <button
                                 key={s.size} type="button" onClick={() => selectSize(s)}
-                                className={`relative p-4 rounded-xl text-center transition-all duration-300 cursor-pointer group ${
+                                className={`relative rounded-xl text-center transition-all duration-300 cursor-pointer group ${
+                                  isPopular ? 'p-5 -mt-1 scale-[1.04] z-10' : 'p-4'
+                                } ${
                                   selected
-                                    ? 'bg-[#f2c36b]/10 border-2 border-[#f2c36b]/60 shadow-[0_0_24px_rgba(242,195,107,0.15)]'
-                                    : 'bg-white/[0.03] hover:bg-white/[0.07]'
+                                    ? 'bg-[#f2c36b]/10 ring-2 ring-[#f2c36b]/60 shadow-[0_0_24px_rgba(242,195,107,0.2)]'
+                                    : isPopular
+                                      ? 'bg-white/[0.06] shadow-[0_4px_20px_rgba(93,223,121,0.08)] hover:bg-white/[0.09]'
+                                      : 'bg-white/[0.03] hover:bg-white/[0.07]'
                                 }`}
                               >
-                                {s.size === '5m³' && (
-                                  <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-[#5ddf79] text-[#003913] text-[8px] font-bold uppercase tracking-wider whitespace-nowrap">
+                                {isPopular && (
+                                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider whitespace-nowrap"
+                                    style={{ background: 'linear-gradient(135deg, #5ddf79, #1FAD4E)', color: '#003913', boxShadow: '0 4px 12px rgba(31,173,78,0.3)' }}>
                                     Mais Popular
                                   </div>
                                 )}
-                                <div className={`text-2xl font-extrabold font-display mb-1 transition-colors ${selected ? 'text-[#f2c36b]' : 'text-white'}`}>
+                                <div className={`font-extrabold font-display mb-1 transition-colors ${isPopular ? 'text-3xl' : 'text-2xl'} ${selected ? 'text-[#f2c36b]' : 'text-white'}`}>
                                   {s.size}
                                 </div>
-                                <div className="text-[10px] font-semibold uppercase tracking-wider text-[#d2c5b2] mb-2">{s.title}</div>
-                                <div className={`text-lg font-bold font-display ${selected ? 'text-[#f2c36b]' : 'text-white/80'}`}>
+                                <div className={`font-semibold uppercase tracking-wider text-[#d2c5b2] mb-2 ${isPopular ? 'text-[11px]' : 'text-[10px]'}`}>{s.title}</div>
+                                <div className={`font-bold font-display ${isPopular ? 'text-xl' : 'text-lg'} ${selected ? 'text-[#f2c36b]' : 'text-white/80'}`}>
                                   R$ {s.price.toFixed(0)}
                                 </div>
                                 {selected && (
                                   <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[#f2c36b] flex items-center justify-center">
-                                    <Check size={12} className="text-[#0a1628]" strokeWidth={3} />
+                                    <Check size={12} className="text-[#071325]" strokeWidth={3} />
                                   </div>
                                 )}
                               </button>

@@ -4,8 +4,7 @@ import { apiPost, type PublicOrderStatusRequest, type PublicOrderStatusResponse 
 import { getOrderAccessToken } from '@/lib/order-access';
 import { SiteHeader } from '@/components/landing/SiteHeader';
 import { SiteFooter } from '@/components/landing/SiteFooter';
-import { Button } from '@/components/ui/button';
-import { CheckCircle, Copy, Clock, Loader2, QrCode, MessageCircle } from 'lucide-react';
+import { CheckCircle, Copy, Clock, Loader2, QrCode, MessageCircle, Shield } from 'lucide-react';
 import { toast } from 'sonner';
 import { useWhatsApp } from '@/contexts/WhatsAppContext';
 
@@ -22,7 +21,6 @@ const Payment = () => {
   useEffect(() => {
     if (!orderId) return;
     const accessToken = getOrderAccessToken(orderId, searchParams.get('token'));
-
     if (!accessToken) {
       toast.error('Link de pagamento inválido ou expirado.');
       navigate('/', { replace: true });
@@ -31,173 +29,211 @@ const Payment = () => {
 
     let cancelled = false;
     let intervalId: number | undefined;
-
     const confirmedUrl = `/pagamento-confirmado/${orderId}?token=${encodeURIComponent(accessToken)}`;
 
     const fetchOrder = async (): Promise<PublicOrderStatusResponse | null> => {
       try {
         const data = await apiPost<PublicOrderStatusResponse, PublicOrderStatusRequest>(
-          'get-order-status',
-          { order_id: orderId, access_token: accessToken },
-        );
-
-        if (cancelled) {
-          return null;
-        }
-
+          'get-order-status', { order_id: orderId, access_token: accessToken });
+        if (cancelled) return null;
         setOrder(data);
         rememberReferralSource(data.referral_source);
         setLoading(false);
         return data;
       } catch {
-        if (!cancelled) {
-          toast.error('Pedido não encontrado ou link inválido.');
-          navigate('/', { replace: true });
-        }
+        if (!cancelled) { toast.error('Pedido não encontrado ou link inválido.'); navigate('/', { replace: true }); }
         return null;
       }
     };
 
     (async () => {
-      const initialOrder = await fetchOrder();
-      if (!initialOrder || cancelled) {
-        return;
-      }
-
-      if (initialOrder.payment_status === 'paid') {
-        navigate(confirmedUrl, { replace: true });
-        return;
-      }
-
+      const initial = await fetchOrder();
+      if (!initial || cancelled) return;
+      if (initial.payment_status === 'paid') { navigate(confirmedUrl, { replace: true }); return; }
       intervalId = window.setInterval(async () => {
-        const updatedOrder = await fetchOrder();
-        if (updatedOrder?.payment_status === 'paid') {
-          window.clearInterval(intervalId);
-          navigate(confirmedUrl, { replace: true });
-        }
+        const updated = await fetchOrder();
+        if (updated?.payment_status === 'paid') { window.clearInterval(intervalId); navigate(confirmedUrl, { replace: true }); }
       }, 5000);
     })();
 
-    return () => {
-      cancelled = true;
-      if (intervalId) {
-        window.clearInterval(intervalId);
-      }
-    };
+    return () => { cancelled = true; if (intervalId) window.clearInterval(intervalId); };
   }, [orderId, navigate, rememberReferralSource, searchParams]);
 
-  // Countdown timer
   useEffect(() => {
     if (!order?.pix_expires_at) return;
     const interval = setInterval(() => {
-      const now = new Date().getTime();
-      const expires = new Date(order.pix_expires_at).getTime();
-      const diff = expires - now;
-      if (diff <= 0) {
-        setTimeLeft('Expirado');
-        clearInterval(interval);
-        return;
-      }
-      const minutes = Math.floor(diff / 60000);
-      const seconds = Math.floor((diff % 60000) / 1000);
-      setTimeLeft(`${minutes}:${seconds.toString().padStart(2, '0')}`);
+      const diff = new Date(order.pix_expires_at).getTime() - Date.now();
+      if (diff <= 0) { setTimeLeft('Expirado'); clearInterval(interval); return; }
+      const m = Math.floor(diff / 60000);
+      const s = Math.floor((diff % 60000) / 1000);
+      setTimeLeft(`${m}:${s.toString().padStart(2, '0')}`);
     }, 1000);
     return () => clearInterval(interval);
   }, [order?.pix_expires_at]);
 
   const handleCopy = async () => {
-    if (!order?.pix_copy_paste) return;
+    const code = order?.pix_qr_code || order?.pix_copy_paste;
+    if (!code) return;
     try {
-      await navigator.clipboard.writeText(order.pix_copy_paste);
+      await navigator.clipboard.writeText(code);
       setCopied(true);
       toast.success('Código PIX copiado!');
       setTimeout(() => setCopied(false), 3000);
-    } catch {
-      toast.error('Erro ao copiar. Copie manualmente.');
-    }
+    } catch { toast.error('Erro ao copiar. Copie manualmente.'); }
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Loader2 className="animate-spin text-primary" size={48} />
+      <div className="min-h-screen flex items-center justify-center" style={{ background: '#071325' }}>
+        <div className="text-center">
+          <Loader2 className="animate-spin mx-auto mb-4" size={40} style={{ color: '#f2c36b' }} />
+          <p style={{ color: '#d2c5b2' }} className="text-sm">Carregando pagamento...</p>
+        </div>
       </div>
     );
   }
 
+  const isExpired = timeLeft === 'Expirado';
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen" style={{ background: '#071325' }}>
       <SiteHeader />
+
       <main className="pt-24 pb-16">
-        <div className="container max-w-lg">
-          <div className="p-6 md:p-8 rounded-2xl bg-card border shadow-sm text-center space-y-6">
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-accent/10 text-accent-foreground text-sm font-medium">
-              <Clock size={14} />
-              <span>Expira em {timeLeft}</span>
+        <div className="container max-w-md mx-auto px-4">
+
+          {/* Timer */}
+          <div className="flex justify-center mb-6">
+            <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-bold ${
+              isExpired
+                ? 'bg-[#ffb4ab]/10 text-[#ffb4ab]'
+                : 'bg-[#5ddf79]/10 text-[#5ddf79]'
+            }`}>
+              <Clock size={15} />
+              {isExpired ? 'PIX expirado' : `Expira em ${timeLeft}`}
+            </div>
+          </div>
+
+          {/* Main card */}
+          <div className="rounded-2xl bg-[rgba(42,53,72,0.6)] backdrop-blur-[12px] shadow-[0_8px_40px_rgba(0,0,0,0.5)] overflow-hidden">
+
+            {/* Header */}
+            <div className="p-6 pb-4 text-center">
+              <h1 className="font-display text-2xl font-extrabold tracking-[-0.02em]" style={{ color: '#d7e3fc' }}>
+                Pagamento via PIX
+              </h1>
+              <p className="text-sm mt-1" style={{ color: '#d2c5b2' }}>
+                Escaneie o QR Code ou copie o código para pagar
+              </p>
             </div>
 
-            <div>
-              <h1 className="font-display text-2xl font-bold text-foreground">Pagamento via PIX</h1>
-              <p className="text-muted-foreground mt-1">Escaneie o QR Code ou copie o código para pagar</p>
-            </div>
-
-            <div className="flex justify-center">
-              <div className="p-3 bg-background rounded-xl border">
+            {/* QR Code */}
+            <div className="flex justify-center px-6 pb-5">
+              <div className="p-4 rounded-2xl bg-white">
                 {order?.pix_qr_code ? (
                   <img
-                    src={`data:image/png;base64,${order.pix_qr_code}`}
+                    src={order.pix_qr_code.startsWith('data:') ? order.pix_qr_code : order.pix_qr_code.startsWith('00020') ? undefined : `data:image/png;base64,${order.pix_qr_code}`}
                     alt="QR Code PIX"
-                    className="w-48 h-48 md:w-56 md:h-56"
+                    className="w-52 h-52 sm:w-60 sm:h-60"
+                    style={{ imageRendering: 'pixelated' }}
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                   />
                 ) : (
-                  <div className="w-48 h-48 md:w-56 md:h-56 flex items-center justify-center bg-muted rounded-lg">
-                    <QrCode size={64} className="text-muted-foreground" />
+                  <div className="w-52 h-52 sm:w-60 sm:h-60 flex items-center justify-center">
+                    <QrCode size={80} className="text-gray-300" />
                   </div>
                 )}
               </div>
             </div>
 
-            <div className="space-y-3">
-              <p className="text-sm font-medium text-foreground">Código PIX Copia e Cola</p>
-              <div className="relative">
-                <div className="p-3 bg-muted rounded-lg text-xs text-muted-foreground break-all max-h-20 overflow-y-auto font-mono">
-                  {order?.pix_copy_paste || 'Código não disponível'}
+            {/* PIX Code */}
+            <div className="px-6 pb-5 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.05em] text-center" style={{ color: '#d2c5b2' }}>
+                Código PIX Copia e Cola
+              </p>
+              <div className="p-3 rounded-xl bg-[#142032] text-xs font-mono break-all max-h-16 overflow-y-auto" style={{ color: '#d7e3fc' }}>
+                {order?.pix_copy_paste || order?.pix_qr_code || 'Código não disponível'}
+              </div>
+              <button
+                onClick={handleCopy}
+                disabled={isExpired}
+                className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-white text-sm transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                style={{
+                  background: copied ? 'linear-gradient(135deg, #1FAD4E, #15803d)' : 'linear-gradient(135deg, #5ddf79, #1FAD4E)',
+                  boxShadow: '0 8px 24px rgba(31,173,78,0.3)',
+                }}
+              >
+                {copied ? <><CheckCircle size={18} /> Copiado!</> : <><Copy size={18} /> Copiar Código PIX</>}
+              </button>
+            </div>
+
+            {/* Divider */}
+            <div className="h-px bg-white/[0.06] mx-6" />
+
+            {/* Order Summary */}
+            <div className="px-6 py-5 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-[0.05em]" style={{ color: '#d2c5b2' }}>
+                Resumo do pedido
+              </p>
+              <div className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span style={{ color: '#d2c5b2' }}>Caçamba</span>
+                  <span className="font-semibold" style={{ color: '#d7e3fc' }}>{order?.tamanho}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span style={{ color: '#d2c5b2' }}>Quantidade</span>
+                  <span className="font-semibold" style={{ color: '#d7e3fc' }}>{order?.quantidade}</span>
+                </div>
+                <div className="flex justify-between items-baseline pt-1">
+                  <span className="font-bold" style={{ color: '#d7e3fc' }}>Total</span>
+                  <span className="font-extrabold font-display text-xl" style={{ color: '#f2c36b' }}>
+                    R$ {Number(order?.valor_total || 0).toFixed(2)}
+                  </span>
                 </div>
               </div>
-              <Button onClick={handleCopy} variant="whatsapp" size="lg" className="w-full">
-                {copied ? <><CheckCircle className="mr-2" size={18} /> Copiado!</> : <><Copy className="mr-2" size={18} /> Copiar Código PIX</>}
-              </Button>
             </div>
 
-            <div className="p-4 rounded-lg bg-muted/50 space-y-2 text-sm text-left">
-              <p className="font-medium text-foreground">Resumo do pedido</p>
-              <div className="flex justify-between"><span className="text-muted-foreground">Caçamba</span><span>{order?.tamanho}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Quantidade</span><span>{order?.quantidade}</span></div>
-              <div className="flex justify-between font-bold"><span>Total</span><span>R$ {Number(order?.valor_total || 0).toFixed(2)}</span></div>
+            {/* Status */}
+            <div className="px-6 pb-5">
+              <div className="flex items-center justify-center gap-2 py-3 rounded-xl bg-white/[0.03]">
+                {isExpired ? (
+                  <span className="text-xs" style={{ color: '#ffb4ab' }}>PIX expirado. Gere um novo pedido.</span>
+                ) : (
+                  <>
+                    <Loader2 className="animate-spin" size={13} style={{ color: '#5ddf79' }} />
+                    <span className="text-xs" style={{ color: '#d2c5b2' }}>
+                      Aguardando pagamento — atualização automática
+                    </span>
+                  </>
+                )}
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 justify-center text-sm text-muted-foreground">
-              <Loader2 className="animate-spin" size={14} />
-              <span>Aguardando confirmação do pagamento. Atualização automática a cada 5 segundos.</span>
-            </div>
-
+            {/* WhatsApp */}
             {available && (
-              <div className="pt-2 border-t border-border">
+              <div className="px-6 pb-6">
                 <a
                   href={getWhatsAppUrl('Olá! Preciso de ajuda com meu pedido PIX.')}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  target="_blank" rel="noopener noreferrer"
                   onClick={(e) => trackClick(e, 'pagamento')}
-                  className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                  className="flex items-center justify-center gap-2 py-3 rounded-xl bg-white/[0.04] hover:bg-white/[0.08] transition-colors"
                 >
-                  <MessageCircle size={14} />
-                  Se tiver alguma dúvida, fale com nosso time no WhatsApp
+                  <MessageCircle size={15} style={{ color: '#5ddf79' }} />
+                  <span className="text-xs" style={{ color: '#d2c5b2' }}>Dúvidas? Fale no WhatsApp</span>
                 </a>
               </div>
             )}
           </div>
+
+          {/* Security badge */}
+          <div className="flex items-center justify-center gap-2 mt-6 text-xs" style={{ color: 'rgba(210,197,178,0.4)' }}>
+            <Shield size={13} />
+            100% Seguro & Criptografado
+          </div>
+
         </div>
       </main>
+
       <SiteFooter />
     </div>
   );
