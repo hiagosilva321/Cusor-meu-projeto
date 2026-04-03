@@ -1,47 +1,55 @@
 import logoIcon from '@/assets/logo-icon.png';
+import { useSiteSettings } from '@/hooks/use-site-settings';
+import { Phone, Mail, MapPin } from 'lucide-react';
 
 export function SiteFooter() {
+  const { settings } = useSiteSettings();
+  const siteName = settings?.site_name || 'CaçambaJá';
+  const telefone = settings?.telefone_principal;
+  const email = settings?.email_contato;
+  const endereco = settings?.endereco_empresa;
+
   return (
-    <footer className="bg-primary py-12">
+    <footer className="py-10" style={{ background: '#010c2c' }}>
       <div className="container">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
-          <div>
-            <div className="flex items-center gap-2 mb-4">
-              <img src={logoIcon} alt="Logo" className="h-8 w-8" />
-              <span className="font-display text-xl font-bold text-primary-foreground">
-                Caçamba<span className="text-accent">Já</span>
-              </span>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 items-start">
+          {/* Logo + Nome */}
+          <div className="flex flex-col items-center md:items-start gap-2">
+            <div className="flex items-center gap-2">
+              <img src={logoIcon} alt="Logo" className="h-6 w-6" />
+              <span className="font-display text-sm font-bold" style={{ color: '#ffe8cb' }}>{siteName}</span>
             </div>
-            <p className="text-primary-foreground/60 text-sm max-w-xs">
-              Aluguel de caçambas com entrega rápida, preço justo e descarte ambientalmente responsável.
+            <p className="text-[11px]" style={{ color: '#514533' }}>
+              © {new Date().getFullYear()} {siteName}. Todos os direitos reservados.
             </p>
           </div>
 
-          <div>
-            <h4 className="font-display font-bold text-primary-foreground mb-4">Links</h4>
-            <ul className="space-y-2 text-sm">
-              <li><a href="#beneficios" className="text-primary-foreground/60 hover:text-accent transition-colors">Benefícios</a></li>
-              <li><a href="#ofertas" className="text-primary-foreground/60 hover:text-accent transition-colors">Ofertas</a></li>
-              <li><a href="#tamanhos" className="text-primary-foreground/60 hover:text-accent transition-colors">Tamanhos e Preços</a></li>
-              <li><a href="#como-funciona" className="text-primary-foreground/60 hover:text-accent transition-colors">Como Funciona</a></li>
-              <li><a href="#contato" className="text-primary-foreground/60 hover:text-accent transition-colors">Contato</a></li>
-            </ul>
-          </div>
-
-          <div>
-            <h4 className="font-display font-bold text-primary-foreground mb-4">Atendimento</h4>
-            <div className="space-y-2 text-sm text-primary-foreground/60">
-              <p>Segunda a Sexta: 7h às 18h</p>
-              <p>Sábado: 7h às 12h</p>
-              <p>Emergência: 24 horas</p>
+          {/* Contato */}
+          {(telefone || email) && (
+            <div className="flex flex-col items-center md:items-start gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#ffe8cb' }}>Contato</span>
+              {telefone && (
+                <a href={`tel:${telefone.replace(/\D/g, '')}`} className="flex items-center gap-2 text-xs transition-colors hover:text-amber-400" style={{ color: '#7a6d5c' }}>
+                  <Phone size={12} /> {telefone}
+                </a>
+              )}
+              {email && (
+                <a href={`mailto:${email}`} className="flex items-center gap-2 text-xs transition-colors hover:text-amber-400" style={{ color: '#7a6d5c' }}>
+                  <Mail size={12} /> {email}
+                </a>
+              )}
             </div>
-          </div>
-        </div>
+          )}
 
-        <div className="border-t border-primary-foreground/10 pt-8 text-center">
-          <p className="text-sm text-primary-foreground/40">
-            © {new Date().getFullYear()} CaçambaJá. Todos os direitos reservados.
-          </p>
+          {/* Endereço */}
+          {endereco && (
+            <div className="flex flex-col items-center md:items-start gap-2">
+              <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#ffe8cb' }}>Endereço</span>
+              <p className="flex items-start gap-2 text-xs" style={{ color: '#7a6d5c' }}>
+                <MapPin size={12} className="shrink-0 mt-0.5" /> {endereco}
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </footer>

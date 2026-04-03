@@ -1,5 +1,15 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  buildCheckoutUrl,
+  clearStoredAssignedNumberId,
+  getOrCreateVisitorId,
+  getStoredAssignedNumberId,
+  getStoredReferralSource,
+  persistAssignedWhatsApp,
+  persistReferralSource,
+  toReferralSource,
+} from '@/lib/whatsapp-sticky';
 
 interface WhatsAppNumber {
   id: string;
@@ -18,46 +28,33 @@ interface WeightedClickResult {
 interface WhatsAppContextType {
   assignedNumber: string;
   assignedNumberId: string;
+  assignedReferralSource: string;
   visitorId: string;
   getWhatsAppUrl: (message?: string) => string;
-  trackClick: (event?: React.MouseEvent<HTMLAnchorElement>) => Promise<void>;
+  getCheckoutUrl: () => string;
+  rememberReferralSource: (referralSource?: string | null) => void;
+  trackClick: (event?: React.MouseEvent<HTMLAnchorElement>, section?: string) => Promise<void>;
   loading: boolean;
   available: boolean;
 }
 
 const WhatsAppContext = createContext<WhatsAppContextType | null>(null);
-
-const VISITOR_ID_KEY = 'cacamba_visitor_id';
-const ASSIGNED_NUMBER_ID_KEY = 'cacamba_assigned_whatsapp_number_id';
 const DEFAULT_MESSAGE = 'Olá quero pedir uma caçamba';
 
-function getOrCreateVisitorId(): string {
-  let id = localStorage.getItem(VISITOR_ID_KEY);
-  if (!id) {
-    id = crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now().toString(36);
-    localStorage.setItem(VISITOR_ID_KEY, id);
-  }
-  return id;
-}
-
-function getStoredAssignedNumberId(): string {
-  return localStorage.getItem(ASSIGNED_NUMBER_ID_KEY) || '';
-}
-
-function selectByWeight(numbers: WhatsAppNumber[]): WhatsAppNumber {
-  let best = numbers[0];
-  let bestRatio = best.click_count / Math.max(best.peso_distribuicao || 1, 1);
-
-  for (let i = 1; i < numbers.length; i++) {
-    const candidate = numbers[i];
-    const ratio = candidate.click_count / Math.max(candidate.peso_distribuicao || 1, 1);
-    if (ratio < bestRatio || (ratio === bestRatio && candidate.order_index < best.order_index)) {
-      bestRatio = ratio;
-      best = candidate;
-    }
-  }
-
-  return best;
+/**
+ * Seleciona o próximo número por rotação fixa.
+ * rotationSize = a cada N cliques, muda pro próximo número.
+ * Ex: rotationSize=5, 3 números → clicks 1-5=chip1, 6-10=chip2, 11-15=chip3, 16-20=chip1...
+ */
+function selectByRotation(numbers: WhatsAppNumber[], rotationSize: number): WhatsAppNumber {
+  // Total de cliques globais
+  const totalClicks = numbers.reduce((sum, n) => sum + n.click_count, 0);
+  // Qual "slot" estamos (0-indexed)
+  const cycleSize = rotationSize * numbers.length;
+  const positionInCycle = totalClicks % cycleSize;
+  const numberIndex = Math.floor(positionInCycle / rotationSize);
+  // Garante que o index está dentro do range
+  return numbers[Math.min(numberIndex, numbers.length - 1)];
 }
 
 function buildWhatsAppUrl(number: string, message?: string) {
@@ -74,23 +71,40 @@ function getMessageFromHref(href?: string): string | undefined {
   }
 }
 
+function findNumberByReferralSource(numbers: WhatsAppNumber[], referralSource: string) {
+  return numbers.find((number) => toReferralSource(number.label) === referralSource) || null;
+}
+
 export function WhatsAppProvider({ children }: { children: React.ReactNode }) {
   const [numbers, setNumbers] = useState<WhatsAppNumber[]>([]);
   const [loading, setLoading] = useState(true);
   const [assignedNumberId, setAssignedNumberId] = useState<string>(() => getStoredAssignedNumberId());
+  const [assignedReferralSource, setAssignedReferralSource] = useState<string>(() => getStoredReferralSource());
+  const [rotationSize, setRotationSize] = useState(5);
   const visitorId = useMemo(() => getOrCreateVisitorId(), []);
   const numbersRef = useRef<WhatsAppNumber[]>([]);
 
   const loadActiveNumbers = useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('whatsapp_numbers')
-        .select('id, number, label, peso_distribuicao, click_count, order_index')
-        .eq('active', true)
-        .order('order_index');
+      const [numbersRes, settingsRes] = await Promise.all([
+        supabase
+          .from('whatsapp_numbers')
+          .select('id, number, label, peso_distribuicao, click_count, order_index')
+          .eq('active', true)
+          .order('order_index'),
+        supabase
+          .from('site_settings')
+          .select('whatsapp_rotation_size')
+          .limit(1)
+          .single(),
+      ]);
 
-      if (error) throw error;
-      setNumbers((data || []) as WhatsAppNumber[]);
+      if (numbersRes.error) throw numbersRes.error;
+      setNumbers((numbersRes.data || []) as WhatsAppNumber[]);
+
+      if (settingsRes.data?.whatsapp_rotation_size) {
+        setRotationSize(settingsRes.data.whatsapp_rotation_size);
+      }
     } catch (err) {
       console.error('WhatsApp init error:', err);
       setNumbers([]);
@@ -111,6 +125,13 @@ export function WhatsAppProvider({ children }: { children: React.ReactNode }) {
           void loadActiveNumbers();
         }
       )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'site_settings' },
+        () => {
+          void loadActiveNumbers();
+        }
+      )
       .subscribe();
 
     const pollId = window.setInterval(() => {
@@ -126,14 +147,23 @@ export function WhatsAppProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     numbersRef.current = numbers;
 
-    if (!assignedNumberId) return;
-
-    const stillActive = numbers.some((number) => number.id === assignedNumberId);
-    if (!stillActive) {
-      localStorage.removeItem(ASSIGNED_NUMBER_ID_KEY);
-      setAssignedNumberId('');
+    if (assignedNumberId) {
+      const stillActive = numbers.some((number) => number.id === assignedNumberId);
+      if (!stillActive) {
+        clearStoredAssignedNumberId();
+        setAssignedNumberId('');
+      }
+      return;
     }
-  }, [numbers, assignedNumberId]);
+
+    if (!assignedReferralSource) return;
+
+    const assignedByReferral = findNumberByReferralSource(numbers, assignedReferralSource);
+    if (assignedByReferral) {
+      persistAssignedWhatsApp(assignedByReferral.id, assignedReferralSource);
+      setAssignedNumberId(assignedByReferral.id);
+    }
+  }, [numbers, assignedNumberId, assignedReferralSource]);
 
   const selectedNumber = useMemo(() => {
     if (numbers.length === 0) return null;
@@ -143,11 +173,24 @@ export function WhatsAppProvider({ children }: { children: React.ReactNode }) {
       if (assigned) return assigned;
     }
 
-    return selectByWeight(numbers);
-  }, [numbers, assignedNumberId]);
+    if (assignedReferralSource) {
+      const assignedByReferral = findNumberByReferralSource(numbers, assignedReferralSource);
+      if (assignedByReferral) return assignedByReferral;
+    }
+
+    return selectByRotation(numbers, rotationSize);
+  }, [numbers, assignedNumberId, assignedReferralSource, rotationSize]);
 
   const assignedNumber = selectedNumber?.number || '';
   const available = numbers.length > 0;
+  const effectiveReferralSource = assignedReferralSource || (selectedNumber ? toReferralSource(selectedNumber.label) : '');
+
+  useEffect(() => {
+    if (!selectedNumber || assignedReferralSource || !effectiveReferralSource) return;
+
+    persistReferralSource(effectiveReferralSource);
+    setAssignedReferralSource(effectiveReferralSource);
+  }, [assignedReferralSource, effectiveReferralSource, selectedNumber]);
 
   const getWhatsAppUrl = useCallback(
     (message?: string) => {
@@ -157,16 +200,29 @@ export function WhatsAppProvider({ children }: { children: React.ReactNode }) {
     [selectedNumber]
   );
 
+  const getCheckoutUrl = useCallback(() => buildCheckoutUrl(effectiveReferralSource), [effectiveReferralSource]);
+
+  const rememberReferralSource = useCallback((referralSource?: string | null) => {
+    if (!referralSource) return;
+    persistReferralSource(referralSource);
+    setAssignedReferralSource(referralSource);
+  }, []);
+
   const trackClick = useCallback(
-    async (event?: React.MouseEvent<HTMLAnchorElement>) => {
+    async (event?: React.MouseEvent<HTMLAnchorElement>, section?: string) => {
       event?.preventDefault();
 
       const customMessage = getMessageFromHref(event?.currentTarget?.href);
 
+      // Seção explícita para analytics precisos (ex: "hero", "tamanhos", "flutuante")
+      const pageUrl = section
+        ? `${window.location.origin}${window.location.pathname}#${section}`
+        : window.location.href;
+
       try {
-        const { data, error } = await (supabase as any).rpc('register_weighted_whatsapp_click', {
+        const { data, error } = await supabase.rpc('register_weighted_whatsapp_click', {
           p_visitor_id: visitorId,
-          p_page_url: window.location.href,
+          p_page_url: pageUrl,
         });
 
         if (error) throw error;
@@ -174,8 +230,13 @@ export function WhatsAppProvider({ children }: { children: React.ReactNode }) {
         const selected = (Array.isArray(data) ? data[0] : data) as WeightedClickResult | null;
         if (!selected?.number_id || !selected?.number_value) return;
 
-        localStorage.setItem(ASSIGNED_NUMBER_ID_KEY, selected.number_id);
+        const selectedMeta = numbersRef.current.find((number) => number.id === selected.number_id);
+        const selectedReferralSource = selectedMeta ? toReferralSource(selectedMeta.label) : '';
+        persistAssignedWhatsApp(selected.number_id, selectedReferralSource);
         setAssignedNumberId(selected.number_id);
+        if (selectedReferralSource) {
+          setAssignedReferralSource(selectedReferralSource);
+        }
 
         setNumbers((prev) =>
           prev.map((item) =>
@@ -191,13 +252,15 @@ export function WhatsAppProvider({ children }: { children: React.ReactNode }) {
         if (fallbackPool.length === 0) return;
 
         const fallbackSelected = assignedNumberId
-          ? fallbackPool.find((number) => number.id === assignedNumberId) || selectByWeight(fallbackPool)
-          : selectByWeight(fallbackPool);
+          ? fallbackPool.find((number) => number.id === assignedNumberId) || selectByRotation(fallbackPool, rotationSize)
+          : selectByRotation(fallbackPool, rotationSize);
 
         if (!fallbackSelected) return;
 
-        localStorage.setItem(ASSIGNED_NUMBER_ID_KEY, fallbackSelected.id);
+        const fallbackReferralSource = toReferralSource(fallbackSelected.label);
+        persistAssignedWhatsApp(fallbackSelected.id, fallbackReferralSource);
         setAssignedNumberId(fallbackSelected.id);
+        setAssignedReferralSource(fallbackReferralSource);
 
         window.open(buildWhatsAppUrl(fallbackSelected.number, customMessage), '_blank', 'noopener,noreferrer');
 
@@ -205,7 +268,7 @@ export function WhatsAppProvider({ children }: { children: React.ReactNode }) {
           await supabase.rpc('register_whatsapp_click', {
             p_number_id: fallbackSelected.id,
             p_visitor_id: visitorId,
-            p_page_url: window.location.href,
+            p_page_url: pageUrl,
           });
 
           setNumbers((prev) =>
@@ -218,7 +281,7 @@ export function WhatsAppProvider({ children }: { children: React.ReactNode }) {
         }
       }
     },
-    [assignedNumberId, visitorId]
+    [assignedNumberId, rotationSize, visitorId]
   );
 
   return (
@@ -226,8 +289,11 @@ export function WhatsAppProvider({ children }: { children: React.ReactNode }) {
       value={{
         assignedNumber,
         assignedNumberId: selectedNumber?.id || '',
+        assignedReferralSource: effectiveReferralSource,
         visitorId,
         getWhatsAppUrl,
+        getCheckoutUrl,
+        rememberReferralSource,
         trackClick,
         loading,
         available,

@@ -1,7 +1,10 @@
-project_id = "dfjujizzlncgrtsypszg"
+project_id = "liuocutpghreoputefav"
 
 [functions.create-pix-charge]
 verify_jwt = false
 
 [functions.fastsoft-webhook]
+verify_jwt = false
+
+[functions.get-order-status]
 verify_jwt = false

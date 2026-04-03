@@ -66,6 +66,7 @@ export type Database = {
           numero: string | null
           numero_atribuido: string | null
           observacoes: string | null
+          order_id: string | null
           quantidade: number
           status: string
           tamanho: string
@@ -87,6 +88,7 @@ export type Database = {
           numero?: string | null
           numero_atribuido?: string | null
           observacoes?: string | null
+          order_id?: string | null
           quantidade?: number
           status?: string
           tamanho: string
@@ -108,6 +110,7 @@ export type Database = {
           numero?: string | null
           numero_atribuido?: string | null
           observacoes?: string | null
+          order_id?: string | null
           quantidade?: number
           status?: string
           tamanho?: string
@@ -124,23 +127,27 @@ export type Database = {
           complemento: string | null
           cpf_cnpj: string | null
           created_at: string
+          data_entrega: string | null
           email: string | null
           endereco: string | null
           estado: string | null
           fastsoft_external_ref: string | null
           fastsoft_transaction_id: string | null
           forma_pagamento: string
+          horario_entrega: string | null
           id: string
           nome: string
           numero: string | null
           observacoes: string | null
           paid_at: string | null
           payment_status: string
+          public_access_token: string
           pix_copy_paste: string | null
           pix_expires_at: string | null
           pix_qr_code: string | null
           pix_qr_code_url: string | null
           quantidade: number
+          referral_source: string | null
           status: string
           tamanho: string
           updated_at: string
@@ -155,23 +162,27 @@ export type Database = {
           complemento?: string | null
           cpf_cnpj?: string | null
           created_at?: string
+          data_entrega?: string | null
           email?: string | null
           endereco?: string | null
           estado?: string | null
           fastsoft_external_ref?: string | null
           fastsoft_transaction_id?: string | null
           forma_pagamento?: string
+          horario_entrega?: string | null
           id?: string
           nome: string
           numero?: string | null
           observacoes?: string | null
           paid_at?: string | null
           payment_status?: string
+          public_access_token?: string
           pix_copy_paste?: string | null
           pix_expires_at?: string | null
           pix_qr_code?: string | null
           pix_qr_code_url?: string | null
           quantidade?: number
+          referral_source?: string | null
           status?: string
           tamanho: string
           updated_at?: string
@@ -186,23 +197,27 @@ export type Database = {
           complemento?: string | null
           cpf_cnpj?: string | null
           created_at?: string
+          data_entrega?: string | null
           email?: string | null
           endereco?: string | null
           estado?: string | null
           fastsoft_external_ref?: string | null
           fastsoft_transaction_id?: string | null
           forma_pagamento?: string
+          horario_entrega?: string | null
           id?: string
           nome?: string
           numero?: string | null
           observacoes?: string | null
           paid_at?: string | null
           payment_status?: string
+          public_access_token?: string
           pix_copy_paste?: string | null
           pix_expires_at?: string | null
           pix_qr_code?: string | null
           pix_qr_code_url?: string | null
           quantidade?: number
+          referral_source?: string | null
           status?: string
           tamanho?: string
           updated_at?: string
@@ -219,6 +234,7 @@ export type Database = {
           id: string
           name: string
           order_index: number
+          updated_at: string
         }
         Insert: {
           active?: boolean
@@ -226,6 +242,7 @@ export type Database = {
           id?: string
           name: string
           order_index?: number
+          updated_at?: string
         }
         Update: {
           active?: boolean
@@ -233,6 +250,7 @@ export type Database = {
           id?: string
           name?: string
           order_index?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -322,6 +340,7 @@ export type Database = {
           telefone_principal: string | null
           updated_at: string
           whatsapp_principal: string | null
+          whatsapp_rotation_size: number
         }
         Insert: {
           created_at?: string
@@ -333,6 +352,7 @@ export type Database = {
           telefone_principal?: string | null
           updated_at?: string
           whatsapp_principal?: string | null
+          whatsapp_rotation_size?: number
         }
         Update: {
           created_at?: string
@@ -344,6 +364,7 @@ export type Database = {
           telefone_principal?: string | null
           updated_at?: string
           whatsapp_principal?: string | null
+          whatsapp_rotation_size?: number
         }
         Relationships: []
       }
@@ -441,6 +462,21 @@ export type Database = {
       register_whatsapp_click: {
         Args: { p_number_id: string; p_page_url: string; p_visitor_id: string }
         Returns: undefined
+      }
+      get_clicks_by_section: {
+        Args: never
+        Returns: {
+          section: string
+          total_clicks: number
+          unique_visitors: number
+        }[]
+      }
+      get_whatsapp_unique_visitors: {
+        Args: never
+        Returns: {
+          total_clicks: number
+          unique_visitors: number
+        }[]
       }
     }
     Enums: {

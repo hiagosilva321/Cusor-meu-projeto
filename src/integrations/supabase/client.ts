@@ -1,26 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
-declare global {
-  interface Window {
-    __CACAMBAJA_ENV__?: {
-      supabaseUrl: string;
-      supabaseAnonKey: string;
-      turnstileSiteKey?: string;
-    };
-  }
-}
-
 function getSupabaseConfig(): { url: string; key: string } {
-  if (typeof window !== "undefined") {
-    const w = window.__CACAMBAJA_ENV__;
-    const urlW = (w?.supabaseUrl ?? "").trim();
-    const keyW = (w?.supabaseAnonKey ?? "").trim();
-    /** env.js no servidor (carrega antes do bundle) — corrige deploy antigo com URL errada */
-    if (urlW.includes(".supabase.co") && keyW.length > 35) {
-      return { url: urlW, key: keyW };
-    }
-  }
   const url = (import.meta.env.VITE_SUPABASE_URL as string) || "";
   const key =
     (import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string) ||
@@ -33,7 +14,7 @@ const { url: SUPABASE_URL, key: SUPABASE_PUBLISHABLE_KEY } = getSupabaseConfig()
 
 if (!SUPABASE_URL || !SUPABASE_PUBLISHABLE_KEY) {
   console.error(
-    "[CaçambaJá] Falta Supabase: faça npm run build com .env (VITE_*) ou coloque env.js no site — node deploy/write-env-js.mjs"
+    "[CaçambaJá] Falta Supabase: configure VITE_SUPABASE_URL e VITE_SUPABASE_PUBLISHABLE_KEY no ambiente do projeto."
   );
 }
 

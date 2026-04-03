@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { MessageCircle, ArrowDown, Shield, Clock, Truck } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { MessageCircle, Clock, ShieldCheck, Truck, ArrowRight } from 'lucide-react';
 import { useWhatsApp } from '@/contexts/WhatsAppContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import heroSlide1 from '@/assets/hero-slide-1.png';
@@ -10,132 +9,197 @@ import heroSlide4 from '@/assets/hero-slide-4.png';
 
 const slides = [heroSlide1, heroSlide2, heroSlide3, heroSlide4];
 
-const trustBadges = [
-  { icon: Clock, text: 'Entrega no mesmo dia' },
-  { icon: Shield, text: 'Empresa licenciada' },
-  { icon: Truck, text: 'Frota própria' },
+const trustMarks = [
+  { icon: Clock, label: 'Entrega hoje', highlight: false },
+  { icon: ShieldCheck, label: 'Licença CETESB', highlight: true },
+  { icon: Truck, label: '15+ caminhões', highlight: false },
 ];
 
+const reveal = (delay: number) => ({
+  initial: { opacity: 0, y: 36, filter: 'blur(6px)' },
+  animate: { opacity: 1, y: 0, filter: 'blur(0px)' },
+  transition: { delay, duration: 0.9, ease: [0.16, 1, 0.3, 1] },
+});
+
 export function HeroSection() {
-  const { getWhatsAppUrl, trackClick, available } = useWhatsApp();
+  const { getWhatsAppUrl, getCheckoutUrl, trackClick, available } = useWhatsApp();
   const [current, setCurrent] = useState(0);
 
-  const next = useCallback(() => {
-    setCurrent((prev) => (prev + 1) % slides.length);
-  }, []);
+  const advance = useCallback(() => setCurrent((p) => (p + 1) % slides.length), []);
 
   useEffect(() => {
-    const timer = setInterval(next, 4000);
-    return () => clearInterval(timer);
-  }, [next]);
+    const id = setInterval(advance, 5500);
+    return () => clearInterval(id);
+  }, [advance]);
 
   return (
-    <section className="relative min-h-[92vh] flex items-center overflow-hidden">
-      {/* Slides */}
+    <section className="relative min-h-[92vh] flex items-end overflow-hidden" style={{ background: '#051131' }}>
+      {/* ── Background carousel with ken-burns ── */}
       <AnimatePresence initial={false}>
         <motion.img
           key={current}
           src={slides[current]}
-          alt="Caçamba profissional"
-          className="absolute inset-0 w-full h-full object-cover"
-          initial={{ opacity: 0, scale: 1.08 }}
-          animate={{ opacity: 1, scale: 1 }}
+          alt=""
+          aria-hidden="true"
+          className="absolute inset-0 w-full h-full object-cover will-change-transform"
+          initial={{ opacity: 0, scale: 1.12 }}
+          animate={{ opacity: 1, scale: 1.04 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 1.2, ease: 'easeInOut' }}
+          transition={{ duration: 6, ease: 'linear' }}
           loading="eager"
         />
       </AnimatePresence>
 
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-gradient-to-r from-primary/95 via-primary/80 to-primary/50" />
+      {/* ── Directional gradient: dark left → semi-transparent right ── */}
+      <div className="absolute inset-0" style={{
+        background: 'linear-gradient(105deg, rgba(5,17,49,0.98) 0%, rgba(5,17,49,0.92) 35%, rgba(5,17,49,0.6) 65%, rgba(5,17,49,0.3) 100%)',
+      }} />
+      {/* Vertical anchor into next section */}
+      <div className="absolute inset-0" style={{
+        background: 'linear-gradient(to top, #051131 0%, transparent 35%)',
+      }} />
 
-      {/* Slide indicators */}
-      <div className="absolute bottom-24 md:bottom-20 left-1/2 -translate-x-1/2 z-20 flex gap-2">
+      {/* ── Noise texture ── */}
+      <div className="absolute inset-0 opacity-[0.035] mix-blend-overlay pointer-events-none" style={{
+        backgroundImage: `url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")`,
+      }} />
+
+      {/* ── Industrial glow — radial golden light on content area ── */}
+      <div className="absolute top-1/3 left-[15%] w-[500px] h-[500px] rounded-full pointer-events-none" style={{
+        background: 'radial-gradient(circle, rgba(255,197,108,0.06) 0%, transparent 70%)',
+      }} />
+
+      {/* ── Golden horizon line ── */}
+      <motion.div
+        initial={{ scaleX: 0, opacity: 0 }}
+        animate={{ scaleX: 1, opacity: 1 }}
+        transition={{ delay: 1.6, duration: 1.4, ease: [0.22, 1, 0.36, 1] }}
+        className="absolute bottom-0 left-0 right-0 h-px origin-left"
+        style={{ background: 'linear-gradient(to right, transparent, rgba(255,197,108,0.4) 30%, rgba(255,197,108,0.4) 70%, transparent)' }}
+      />
+
+      {/* ── Slide indicators ── */}
+      <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-20 flex gap-2">
         {slides.map((_, i) => (
-          <button
-            key={i}
-            onClick={() => setCurrent(i)}
-            aria-label={`Slide ${i + 1}`}
-            className={`h-1.5 rounded-full transition-all duration-500 ${
-              i === current ? 'w-8 bg-accent' : 'w-3 bg-primary-foreground/40'
-            }`}
+          <button key={i} onClick={() => setCurrent(i)} aria-label={`Slide ${i + 1}`}
+            className="h-[3px] rounded-full transition-all duration-700"
+            style={{ width: i === current ? 36 : 10, background: i === current ? '#ffc56c' : 'rgba(219,225,255,0.12)' }}
           />
         ))}
       </div>
 
-      <div className="container relative z-10 pt-24 pb-12">
-        <div className="max-w-2xl">
-          <motion.span
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="inline-block px-4 py-1.5 rounded-full bg-accent/20 text-accent text-sm font-semibold mb-6 backdrop-blur-sm border border-accent/30"
-          >
-            ⚡ Atendimento rápido em São Paulo e Região
-          </motion.span>
+      {/* ── Content ── */}
+      <div className="container relative z-10 pb-20 pt-28 md:pt-36 lg:pt-40 md:pb-24">
+        <div className="max-w-[560px]">
+          {/* Badge */}
+          <motion.div {...reveal(0.08)}>
+            <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-[11px] font-bold uppercase" style={{
+              letterSpacing: '0.14em',
+              color: '#ffe8cb',
+              background: 'rgba(255,197,108,0.08)',
+              border: '1px solid rgba(255,197,108,0.18)',
+              backdropFilter: 'blur(8px)',
+            }}>
+              <span className="text-sm leading-none">⚡</span>
+              Entrega no mesmo dia em SP e Região
+            </span>
+          </motion.div>
 
-          <motion.h1
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3, duration: 0.6 }}
-            className="font-display text-4xl md:text-5xl lg:text-6xl font-extrabold text-primary-foreground leading-[1.1] mb-6 text-balance"
-          >
-            Aluguel de caçambas com entrega{' '}
-            <span className="text-accent">rápida e segura</span>
+          {/* Headline — Plus Jakarta Sans, extrabold, editorial scale */}
+          <motion.h1 {...reveal(0.24)} className="mt-7 mb-5" style={{
+            fontFamily: "'Plus Jakarta Sans', sans-serif",
+            fontWeight: 800,
+            fontSize: 'clamp(2.2rem, 4.5vw + 0.5rem, 3.75rem)',
+            lineHeight: 1.05,
+            letterSpacing: '-0.03em',
+            color: '#ffe8cb',
+          }}>
+            Aluguel de Caçambas
+            <br />
+            com Entrega{' '}
+            <span style={{
+              background: 'linear-gradient(135deg, #ffc56c 0%, #ffba44 100%)',
+              WebkitBackgroundClip: 'text',
+              WebkitTextFillColor: 'transparent',
+              textShadow: '0 0 60px rgba(255,197,108,0.15)',
+            }}>
+              Rápida e Segura
+            </span>
           </motion.h1>
 
-          <motion.p
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.5 }}
-            className="text-lg md:text-xl text-primary-foreground/80 mb-8 max-w-lg leading-relaxed"
-          >
-            Locação de caçambas estacionárias com entrega no mesmo dia, preço justo e descarte ambientalmente responsável.
+          {/* Body */}
+          <motion.p {...reveal(0.4)} className="max-w-[440px] mb-9" style={{
+            fontFamily: "'Inter', sans-serif",
+            fontSize: '1.125rem',
+            lineHeight: 1.7,
+            color: '#c9baa8',
+          }}>
+            Preço fechado com entrega, permanência e retirada. Sem surpresas.
+            Solicite agora e receba sua caçamba hoje.
           </motion.p>
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.6 }}
-            className="flex flex-col sm:flex-row gap-4 mb-10"
-          >
-            {available && (
-              <a href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer" onClick={trackClick}>
-                <Button variant="whatsapp" size="xl" className="w-full sm:w-auto">
-                  <MessageCircle className="mr-2" />
-                  Pedir agora no WhatsApp
-                </Button>
+          {/* CTAs — larger, with glow */}
+          <motion.div {...reveal(0.54)} className="flex flex-col sm:flex-row gap-3 mb-8">
+            {available ? (
+              <a href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer" onClick={(e) => trackClick(e, 'hero')}
+                className="group inline-flex items-center justify-center gap-2.5 rounded-xl px-10 py-[18px] text-[17px] font-bold text-white transition-all duration-300 hover:-translate-y-1 hover:scale-[1.02]"
+                style={{
+                  background: 'linear-gradient(135deg, #15b84f 0%, #0d8a3a 100%)',
+                  boxShadow: '0 12px 36px rgba(18,167,73,0.4), 0 0 60px rgba(93,223,121,0.1), 0 0 0 1px rgba(93,223,121,0.12), inset 0 1px 0 rgba(255,255,255,0.1)',
+                }}>
+                <MessageCircle size={19} strokeWidth={2.5} />
+                Pedir pelo WhatsApp
+              </a>
+            ) : (
+              <a href={getCheckoutUrl()}
+                className="inline-flex items-center justify-center gap-2 rounded-xl px-8 py-4 text-base font-bold transition-all duration-200 hover:-translate-y-1"
+                style={{
+                  color: '#051131',
+                  background: 'linear-gradient(135deg, #ffe8cb 0%, #ffc56c 100%)',
+                  boxShadow: '0 10px 30px rgba(255,197,108,0.3), 0 0 0 1px rgba(255,197,108,0.2)',
+                }}>
+                Solicitar Caçamba
               </a>
             )}
-            <a href="#tamanhos">
-              <Button
-                variant="outline"
-                size="xl"
-                className="w-full sm:w-auto border-2 border-white/90 bg-white/95 text-slate-900 shadow-lg font-semibold hover:bg-white hover:text-slate-900 dark:border-white/90 dark:bg-white/95 dark:text-slate-900"
-              >
-                Ver tamanhos e preços
-              </Button>
+            <a href="#tamanhos"
+              className="inline-flex items-center justify-center gap-2 rounded-xl px-7 py-4 text-base font-medium transition-all duration-200 hover:-translate-y-0.5 group"
+              style={{
+                color: '#dbe1ff',
+                border: '1px solid rgba(159,142,121,0.25)',
+                backdropFilter: 'blur(6px)',
+                background: 'rgba(5,17,49,0.4)',
+              }}>
+              Ver Tamanhos e Preços
+              <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" style={{ color: '#ffc56c' }} />
             </a>
           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.8 }}
-            className="flex flex-wrap gap-6"
-          >
-            {trustBadges.map((badge) => (
-              <div key={badge.text} className="flex items-center gap-2 text-primary-foreground/70">
-                <badge.icon size={16} className="text-accent" />
-                <span className="text-sm font-medium">{badge.text}</span>
+          {/* Trust marks — glassmorphic pills with industrial glow on highlight */}
+          <motion.div {...reveal(0.68)} className="flex flex-wrap gap-2.5">
+            {trustMarks.map((mark) => (
+              <div key={mark.label} className="flex items-center gap-2 px-3 py-2 rounded-lg transition-all duration-300" style={{
+                background: mark.highlight
+                  ? 'linear-gradient(135deg, rgba(255,197,108,0.1) 0%, rgba(255,186,68,0.06) 100%)'
+                  : 'rgba(19,30,62,0.7)',
+                backdropFilter: 'blur(12px)',
+                border: mark.highlight
+                  ? '1px solid rgba(255,197,108,0.3)'
+                  : '1px solid rgba(219,225,255,0.06)',
+                boxShadow: mark.highlight
+                  ? '0 0 30px rgba(255,197,108,0.1), inset 0 1px 0 rgba(255,197,108,0.08)'
+                  : '0 2px 8px rgba(0,0,0,0.15)',
+              }}>
+                <mark.icon size={14} strokeWidth={2.2} style={{ color: mark.highlight ? '#ffc56c' : '#9f8e79' }} />
+                <span className="text-[12px] font-semibold" style={{
+                  color: mark.highlight ? '#ffe8cb' : '#b8c0d6',
+                  letterSpacing: '0.015em',
+                }}>
+                  {mark.label}
+                </span>
               </div>
             ))}
           </motion.div>
         </div>
-      </div>
-
-      <div className="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce hidden md:block">
-        <ArrowDown className="text-primary-foreground/30" size={28} />
       </div>
     </section>
   );

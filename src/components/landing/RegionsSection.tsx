@@ -1,40 +1,40 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import type { Tables } from '@/integrations/supabase/types';
 import { MapPin } from 'lucide-react';
-import { AnimateOnScroll, StaggerContainer, StaggerItem } from '@/components/ui/animate-on-scroll';
+import { motion } from 'framer-motion';
 
 export function RegionsSection() {
-  const [regions, setRegions] = useState<any[]>([]);
+  const [regions, setRegions] = useState<Tables<'regions'>[]>([]);
 
   useEffect(() => {
-    async function fetchRegions() {
-      const { data } = await supabase.from('regions').select('*').eq('active', true).order('order_index');
-      if (data) setRegions(data);
-    }
-    fetchRegions();
+    supabase.from('regions').select('*').eq('active', true).order('order_index')
+      .then(({ data }) => { if (data) setRegions(data); });
   }, []);
 
   if (regions.length === 0) return null;
 
   return (
-    <section className="py-20 md:py-28">
+    <section className="py-14 md:py-20" style={{ background: '#051131' }}>
       <div className="container">
-        <AnimateOnScroll className="text-center max-w-2xl mx-auto mb-16">
-          <span className="text-sm font-semibold text-accent uppercase tracking-wider">Área de cobertura</span>
-          <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mt-3 mb-4">Regiões Atendidas</h2>
-          <p className="text-muted-foreground text-lg">Atendemos São Paulo capital e toda a região metropolitana.</p>
-        </AnimateOnScroll>
+        <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center mb-8">
+          <h2 className="font-display text-2xl md:text-3xl font-extrabold tracking-tight" style={{ color: '#ffe8cb' }}>
+            Onde atendemos
+          </h2>
+          <p className="mt-2 text-sm" style={{ color: '#9f8e79' }}>SP capital e região metropolitana.</p>
+        </motion.div>
 
-        <StaggerContainer className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-          {regions.map((r) => (
-            <StaggerItem key={r.id}>
-              <div className="flex items-center gap-2 p-3 rounded-lg bg-surface border border-border/50 hover:border-accent/50 transition-colors">
-                <MapPin size={16} className="text-accent shrink-0" />
-                <span className="text-sm font-medium text-foreground">{r.name}</span>
-              </div>
-            </StaggerItem>
+        <div className="flex flex-wrap justify-center gap-2 max-w-3xl mx-auto">
+          {regions.map((r, i) => (
+            <motion.div key={r.id}
+              initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }} transition={{ delay: i * 0.03, duration: 0.3 }}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg" style={{ background: 'rgba(19,30,62,0.7)', border: '1px solid rgba(219,225,255,0.05)' }}>
+              <MapPin size={12} style={{ color: '#ffc56c' }} />
+              <span className="text-xs font-medium" style={{ color: '#b8c0d6' }}>{r.name}</span>
+            </motion.div>
           ))}
-        </StaggerContainer>
+        </div>
       </div>
     </section>
   );

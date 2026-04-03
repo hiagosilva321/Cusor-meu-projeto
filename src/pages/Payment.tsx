@@ -1,70 +1,90 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { apiPost, type PublicOrderStatusRequest, type PublicOrderStatusResponse } from '@/lib/api';
+import { getOrderAccessToken } from '@/lib/order-access';
 import { SiteHeader } from '@/components/landing/SiteHeader';
 import { SiteFooter } from '@/components/landing/SiteFooter';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Copy, Clock, Loader2, QrCode, MessageCircle } from 'lucide-react';
 import { toast } from 'sonner';
-import { QRCodeSVG } from 'qrcode.react';
 import { useWhatsApp } from '@/contexts/WhatsAppContext';
 
 const Payment = () => {
   const { orderId } = useParams<{ orderId: string }>();
   const navigate = useNavigate();
-  const { getWhatsAppUrl, trackClick, available } = useWhatsApp();
-  const [order, setOrder] = useState<any>(null);
+  const [searchParams] = useSearchParams();
+  const { getWhatsAppUrl, rememberReferralSource, trackClick, available } = useWhatsApp();
+  const [order, setOrder] = useState<PublicOrderStatusResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [copied, setCopied] = useState(false);
   const [timeLeft, setTimeLeft] = useState('');
 
   useEffect(() => {
     if (!orderId) return;
+    const accessToken = getOrderAccessToken(orderId, searchParams.get('token'));
 
-    const fetchOrder = async () => {
-      const { data, error } = await supabase
-        .from('orders')
-        .select('*')
-        .eq('id', orderId)
-        .single();
+    if (!accessToken) {
+      toast.error('Link de pagamento inválido ou expirado.');
+      navigate('/', { replace: true });
+      return;
+    }
 
-      if (error || !data) {
-        toast.error('Pedido não encontrado.');
-        navigate('/');
+    let cancelled = false;
+    let intervalId: number | undefined;
+
+    const confirmedUrl = `/pagamento-confirmado/${orderId}?token=${encodeURIComponent(accessToken)}`;
+
+    const fetchOrder = async (): Promise<PublicOrderStatusResponse | null> => {
+      try {
+        const data = await apiPost<PublicOrderStatusResponse, PublicOrderStatusRequest>(
+          'get-order-status',
+          { order_id: orderId, access_token: accessToken },
+        );
+
+        if (cancelled) {
+          return null;
+        }
+
+        setOrder(data);
+        rememberReferralSource(data.referral_source);
+        setLoading(false);
+        return data;
+      } catch {
+        if (!cancelled) {
+          toast.error('Pedido não encontrado ou link inválido.');
+          navigate('/', { replace: true });
+        }
+        return null;
+      }
+    };
+
+    (async () => {
+      const initialOrder = await fetchOrder();
+      if (!initialOrder || cancelled) {
         return;
       }
 
-      setOrder(data);
-      setLoading(false);
-
-      if (data.payment_status === 'paid') {
-        navigate(`/pagamento-confirmado/${orderId}`);
+      if (initialOrder.payment_status === 'paid') {
+        navigate(confirmedUrl, { replace: true });
+        return;
       }
-    };
 
-    fetchOrder();
-
-    // Subscribe to realtime updates
-    const channel = supabase
-      .channel(`order-${orderId}`)
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'orders',
-        filter: `id=eq.${orderId}`,
-      }, (payload) => {
-        const updated = payload.new as any;
-        setOrder(updated);
-        if (updated.payment_status === 'paid') {
-          navigate(`/pagamento-confirmado/${orderId}`);
+      intervalId = window.setInterval(async () => {
+        const updatedOrder = await fetchOrder();
+        if (updatedOrder?.payment_status === 'paid') {
+          window.clearInterval(intervalId);
+          navigate(confirmedUrl, { replace: true });
         }
-      })
-      .subscribe();
+      }, 5000);
+    })();
 
     return () => {
-      supabase.removeChannel(channel);
+      cancelled = true;
+      if (intervalId) {
+        window.clearInterval(intervalId);
+      }
     };
-  }, [orderId, navigate]);
+  }, [orderId, navigate, rememberReferralSource, searchParams]);
 
   // Countdown timer
   useEffect(() => {
@@ -123,8 +143,12 @@ const Payment = () => {
 
             <div className="flex justify-center">
               <div className="p-3 bg-background rounded-xl border">
-                {order?.pix_copy_paste ? (
-                  <QRCodeSVG value={order.pix_copy_paste} size={224} className="w-48 h-48 md:w-56 md:h-56" />
+                {order?.pix_qr_code ? (
+                  <img
+                    src={`data:image/png;base64,${order.pix_qr_code}`}
+                    alt="QR Code PIX"
+                    className="w-48 h-48 md:w-56 md:h-56"
+                  />
                 ) : (
                   <div className="w-48 h-48 md:w-56 md:h-56 flex items-center justify-center bg-muted rounded-lg">
                     <QrCode size={64} className="text-muted-foreground" />
@@ -154,7 +178,7 @@ const Payment = () => {
 
             <div className="flex items-center gap-2 justify-center text-sm text-muted-foreground">
               <Loader2 className="animate-spin" size={14} />
-              <span>Aguardando confirmação do pagamento...</span>
+              <span>Aguardando confirmação do pagamento. Atualização automática a cada 5 segundos.</span>
             </div>
 
             {available && (
@@ -163,7 +187,7 @@ const Payment = () => {
                   href={getWhatsAppUrl('Olá! Preciso de ajuda com meu pedido PIX.')}
                   target="_blank"
                   rel="noopener noreferrer"
-                  onClick={trackClick}
+                  onClick={(e) => trackClick(e, 'pagamento')}
                   className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
                 >
                   <MessageCircle size={14} />

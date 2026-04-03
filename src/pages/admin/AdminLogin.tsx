@@ -13,10 +13,6 @@ import logoIcon from '@/assets/logo-icon.png';
 const DEFAULT_ADMIN_EMAIL = 'admin@cacambja.com';
 
 function turnstileSiteKey(): string {
-  if (typeof window !== 'undefined') {
-    const t = window.__CACAMBAJA_ENV__?.turnstileSiteKey?.trim();
-    if (t) return t;
-  }
   return (import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined)?.trim() || '';
 }
 
@@ -48,7 +44,7 @@ export default function AdminLogin() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!configured) {
-      toast.error('Supabase não configurado (URL/chave). Verifique .env ou env.js e deploy.');
+      toast.error('Supabase não configurado (URL/chave). Verifique as variáveis do ambiente atual e o deploy na Vercel.');
       return;
     }
     const siteKey = turnstileSiteKey();
@@ -102,8 +98,7 @@ export default function AdminLogin() {
             <strong>Erro 422 no login?</strong> O Supabase pode exigir CAPTCHA. Faça <strong>uma</strong> destas: (1){' '}
             <strong>Desligar</strong> proteção no login: Authentication → <strong>Attack Protection</strong> → desative
             CAPTCHA no sign-in. (2) Ou crie Turnstile em Cloudflare, coloque o <strong>Site Key</strong> em{' '}
-            <code className="rounded bg-black/10 px-1">VITE_TURNSTILE_SITE_KEY</code> no <code>.env</code>, regenere{' '}
-            <code>env.js</code> e faça deploy — guia: <code>deploy/DIAGNOSTICO-LOGIN-E-DEPLOY.md</code>
+            <code className="rounded bg-black/10 px-1">VITE_TURNSTILE_SITE_KEY</code> no ambiente da Vercel e publique um novo deploy.
           </div>
         )}
 

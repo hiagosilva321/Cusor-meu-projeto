@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="pt-BR"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&amp;family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "tertiary-fixed": "#dbe1ff",
+              "inverse-surface": "#dbe1ff",
+              "on-error": "#690005",
+              "error": "#ffb4ab",
+              "on-primary-fixed": "#281800",
+              "surface-container-low": "#0e1a3a",
+              "on-primary-container": "#785000",
+              "on-primary-fixed-variant": "#614000",
+              "primary-container": "#ffc56c",
+              "on-surface": "#dbe1ff",
+              "tertiary": "#e7eaff",
+              "secondary-fixed-dim": "#bbc5ef",
+              "secondary-fixed": "#dce1ff",
+              "tertiary-container": "#c3cef7",
+              "surface-container": "#131e3e",
+              "primary-fixed-dim": "#f6bd65",
+              "surface-container-lowest": "#010c2c",
+              "on-secondary": "#252f50",
+              "on-tertiary": "#242f50",
+              "on-primary": "#442c00",
+              "surface": "#051131",
+              "outline-variant": "#504537",
+              "surface-tint": "#f6bd65",
+              "surface-container-high": "#1e2949",
+              "on-tertiary-fixed": "#0e1a3a",
+              "surface-variant": "#293355",
+              "primary": "#ffe8cb",
+              "on-secondary-fixed-variant": "#3c4568",
+              "background": "#051131",
+              "on-secondary-container": "#aab4dc",
+              "surface-bright": "#2d3859",
+              "primary-fixed": "#ffddb0",
+              "surface-container-highest": "#293355",
+              "on-secondary-fixed": "#0f1a3a",
+              "tertiary-fixed-dim": "#bac5ee",
+              "inverse-on-surface": "#242f50",
+              "inverse-primary": "#805600",
+              "on-tertiary-container": "#4c577a",
+              "secondary": "#bbc5ef",
+              "error-container": "#93000a",
+              "secondary-container": "#3c4568",
+              "on-background": "#dbe1ff",
+              "on-surface-variant": "#d4c4b2",
+              "on-error-container": "#ffdad6",
+              "on-tertiary-fixed-variant": "#3b4668",
+              "surface-dim": "#051131",
+              "outline": "#9c8f7e"
+            },
+            fontFamily: {
+              "headline": ["Plus Jakarta Sans"],
+              "body": ["Inter"],
+              "label": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glass-nav {
+            background: rgba(5, 17, 49, 0.6);
+            backdrop-filter: blur(24px);
+        }
+        .industrial-glow {
+            box-shadow: 0 0 30px rgba(255, 197, 108, 0.15);
+        }
+    </style>
+</head>
+<body class="bg-background text-on-surface font-body selection:bg-primary-container selection:text-on-primary-container">
+<!-- TOP NAVIGATION -->
+<nav class="fixed top-0 w-full z-50 bg-[#051131]/60 backdrop-blur-xl shadow-2xl shadow-[#010c2c]/40">
+<div class="flex justify-between items-center px-8 py-4 max-w-full mx-auto">
+<span class="text-2xl font-black text-[#ffe8cb] tracking-tight font-headline">TITAN RENTALS</span>
+<div class="hidden md:flex gap-10">
+<a class="text-[#ffc56c] border-b-2 border-[#ffc56c] pb-1 font-['Plus_Jakarta_Sans'] tracking-tighter uppercase font-bold transition-all duration-300" href="#ofertas">Ofertas</a>
+<a class="text-[#d4c4b2] hover:text-[#ffc56c] font-['Plus_Jakarta_Sans'] tracking-tighter uppercase font-bold transition-colors duration-300" href="#beneficios">Benefícios</a>
+<a class="text-[#d4c4b2] hover:text-[#ffc56c] font-['Plus_Jakarta_Sans'] tracking-tighter uppercase font-bold transition-colors duration-300" href="#depoimentos">Depoimentos</a>
+<a class="text-[#d4c4b2] hover:text-[#ffc56c] font-['Plus_Jakarta_Sans'] tracking-tighter uppercase font-bold transition-colors duration-300" href="#orcamento">Orçamento</a>
+</div>
+<div class="flex gap-4">
+<button class="bg-[#0e1a3a] text-[#ffe8cb] px-6 py-2 rounded-lg font-bold hover:opacity-80 transition-all active:scale-95 border border-outline-variant/30">WhatsApp</button>
+<button class="bg-gradient-to-br from-[#ffe8cb] to-[#ffc56c] text-[#442c00] px-6 py-2 rounded-lg font-bold hover:opacity-80 transition-all active:scale-95">Alugar Agora</button>
+</div>
+</div>
+</nav>
+<!-- HERO SECTION (Implicit Context) -->
+<header class="relative h-[819px] flex items-center justify-start overflow-hidden pt-20">
+<div class="absolute inset-0 z-0">
+<img class="w-full h-full object-cover opacity-40 grayscale" data-alt="Heavy industrial construction site at night with cinematic blue lighting and heavy machinery silhouettes" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBWcKfPUnt2pReBzDy3OAuIOci54YJcdP2jDNZ6NqPOlwSrDs4QgMrpICK9z-FNL7FdaUi2PygQyort0s7tqT3u1jg7UBbf3STA-uThC7iBfqRj-a6uDsaqYyGLuY1l42xTtzDtJMvNH9bliSUS6kuI_-f13XA_7-02OqoW56RtebsPeDRRXxj1F0J2N1MOCxX6LclAAJz8VNhCxS8XotDUpvAs4LgF9pA1CPbl59UjHHw7AUNer0wmjR6Jxyfpo3Y9mQeDdbD7AcE"/>
+<div class="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-transparent"></div>
+</div>
+<div class="relative z-10 px-8 md:px-24 max-w-4xl">
+<h1 class="font-headline text-6xl md:text-8xl font-extrabold tracking-tighter text-primary leading-[0.9] mb-8">
+                FORÇA <br/> BRUTA, <br/> LOGÍSTICA <br/> <span class="text-primary-container">FINA.</span>
+</h1>
+<p class="text-xl text-on-surface-variant max-w-lg mb-10 leading-relaxed">
+                Transformamos o descarte industrial em uma operação de alta precisão com caçambas blindadas e logística inteligente.
+            </p>
+</div>
+</header>
+<!-- SECTION 3: OFERTAS ESPECIAIS -->
+<section class="py-24 bg-surface px-8 md:px-24" id="ofertas">
+<div class="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-8">
+<div class="max-w-2xl">
+<span class="inline-flex items-center gap-2 bg-primary-container/20 text-primary-container px-4 py-1 rounded-full text-xs font-bold tracking-widest uppercase mb-4">
+<span class="material-symbols-outlined text-sm" style="font-variation-settings: 'FILL' 1;">star</span> Ofertas Limitadas
+                </span>
+<h2 class="font-headline text-4xl md:text-5xl font-extrabold text-primary tracking-tight">Soluções de Descarte Premium</h2>
+</div>
+<p class="text-on-surface-variant font-medium uppercase tracking-widest text-sm">Válido até o fim do mês</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<!-- Card 1 -->
+<div class="bg-surface-container-low p-10 rounded-xl relative group transition-all duration-500 hover:-translate-y-2 border border-primary-container/10 industrial-glow">
+<div class="absolute -top-4 left-10 bg-primary-container text-on-primary px-4 py-1 rounded text-xs font-bold">MAIS POPULAR</div>
+<h3 class="font-headline text-2xl font-bold mb-2">Residencial Pro</h3>
+<p class="text-on-surface-variant mb-8">Caçamba 4m³ - Ideal para reformas urbanas rápidas.</p>
+<div class="flex flex-col gap-1">
+<span class="text-on-surface-variant/50 line-through text-lg">R$ 450,00</span>
+<span class="text-primary-container font-headline text-5xl font-black">R$ 380</span>
+</div>
+<button class="w-full mt-10 py-4 bg-surface-container-high border border-primary-container/30 text-primary-container font-bold rounded-lg hover:bg-primary-container hover:text-on-primary transition-all">RESERVAR AGORA</button>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-container-low p-10 rounded-xl transition-all duration-500 hover:-translate-y-2 border border-primary-container/10 industrial-glow">
+<h3 class="font-headline text-2xl font-bold mb-2">Industrial Heavy</h3>
+<p class="text-on-surface-variant mb-8">Caçamba 7m³ - Reforço estrutural para resíduos pesados.</p>
+<div class="flex flex-col gap-1">
+<span class="text-on-surface-variant/50 line-through text-lg">R$ 720,00</span>
+<span class="text-primary-container font-headline text-5xl font-black">R$ 590</span>
+</div>
+<button class="w-full mt-10 py-4 bg-surface-container-high border border-primary-container/30 text-primary-container font-bold rounded-lg hover:bg-primary-container hover:text-on-primary transition-all">RESERVAR AGORA</button>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-container-low p-10 rounded-xl transition-all duration-500 hover:-translate-y-2 border border-primary-container/10 industrial-glow">
+<h3 class="font-headline text-2xl font-bold mb-2">Combo Titan</h3>
+<p class="text-on-surface-variant mb-8">2 Caçambas + Descarte Ecológico Premium.</p>
+<div class="flex flex-col gap-1">
+<span class="text-on-surface-variant/50 line-through text-lg">R$ 1.100,00</span>
+<span class="text-primary-container font-headline text-5xl font-black">R$ 890</span>
+</div>
+<button class="w-full mt-10 py-4 bg-surface-container-high border border-primary-container/30 text-primary-container font-bold rounded-lg hover:bg-primary-container hover:text-on-primary transition-all">RESERVAR AGORA</button>
+</div>
+</div>
+</section>
+<!-- SECTION 4: POR QUE NOS ESCOLHER -->
+<section class="py-24 bg-surface-container-low px-8 md:px-24" id="beneficios">
+<div class="mb-20 text-center">
+<h2 class="font-headline text-4xl md:text-5xl font-extrabold text-primary mb-4 tracking-tighter">Vantagem Titan</h2>
+<p class="text-on-surface-variant max-w-xl mx-auto">Engenharia de logística aplicada ao descarte de resíduos. Eficiência que você sente no cronograma da sua obra.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<!-- Benefit 1 -->
+<div class="bg-surface-container-high p-8 rounded-xl flex flex-col gap-6">
+<div class="w-14 h-14 rounded-full bg-primary-container/10 flex items-center justify-center border border-primary-container/20">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">speed</span>
+</div>
+<div>
+<h4 class="font-headline text-xl font-bold text-primary mb-2">Entrega Expressa</h4>
+<p class="text-on-surface-variant text-sm leading-relaxed">Posicionamento estratégico em 2 horas em toda zona metropolitana.</p>
+</div>
+</div>
+<!-- Benefit 2 -->
+<div class="bg-surface-container-high p-8 rounded-xl flex flex-col gap-6">
+<div class="w-14 h-14 rounded-full bg-primary-container/10 flex items-center justify-center border border-primary-container/20">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">security</span>
+</div>
+<div>
+<h4 class="font-headline text-xl font-bold text-primary mb-2">Segurança Total</h4>
+<p class="text-on-surface-variant text-sm leading-relaxed">Caçambas com sinalização refletiva de alta visibilidade industrial.</p>
+</div>
+</div>
+<!-- Benefit 3 -->
+<div class="bg-surface-container-high p-8 rounded-xl flex flex-col gap-6">
+<div class="w-14 h-14 rounded-full bg-primary-container/10 flex items-center justify-center border border-primary-container/20">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">eco</span>
+</div>
+<div>
+<h4 class="font-headline text-xl font-bold text-primary mb-2">Descarte Verde</h4>
+<p class="text-on-surface-variant text-sm leading-relaxed">Triagem certificada em centros de reciclagem de última geração.</p>
+</div>
+</div>
+<!-- Benefit 4 -->
+<div class="bg-surface-container-high p-8 rounded-xl flex flex-col gap-6">
+<div class="w-14 h-14 rounded-full bg-primary-container/10 flex items-center justify-center border border-primary-container/20">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">location_on</span>
+</div>
+<div>
+<h4 class="font-headline text-xl font-bold text-primary mb-2">Rastreio em Tempo Real</h4>
+<p class="text-on-surface-variant text-sm leading-relaxed">Monitore sua entrega e retirada via GPS direto pelo WhatsApp.</p>
+</div>
+</div>
+<!-- Benefit 5 -->
+<div class="bg-surface-container-high p-8 rounded-xl flex flex-col gap-6">
+<div class="w-14 h-14 rounded-full bg-primary-container/10 flex items-center justify-center border border-primary-container/20">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">payments</span>
+</div>
+<div>
+<h4 class="font-headline text-xl font-bold text-primary mb-2">Preço Transparente</h4>
+<p class="text-on-surface-variant text-sm leading-relaxed">Sem taxas ocultas de aterro ou km rodado. Valor fechado no pedido.</p>
+</div>
+</div>
+<!-- Benefit 6 -->
+<div class="bg-surface-container-high p-8 rounded-xl flex flex-col gap-6">
+<div class="w-14 h-14 rounded-full bg-primary-container/10 flex items-center justify-center border border-primary-container/20">
+<span class="material-symbols-outlined text-primary-container" style="font-variation-settings: 'FILL' 1;">support_agent</span>
+</div>
+<div>
+<h4 class="font-headline text-xl font-bold text-primary mb-2">Suporte Industrial</h4>
+<p class="text-on-surface-variant text-sm leading-relaxed">Equipe treinada para atender desde reformas a grandes canteiros.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- SECTION 5: SOCIAL PROOF COUNTER BAR -->
+<section class="py-16 bg-surface-container-lowest border-y border-outline-variant/10">
+<div class="max-w-7xl mx-auto px-8 grid grid-cols-2 md:grid-cols-4 gap-12 text-center">
+<div class="flex flex-col items-center">
+<span class="text-primary-container font-headline text-5xl font-black mb-2">+500</span>
+<span class="text-on-surface-variant uppercase tracking-widest text-xs font-bold">Clientes Ativos</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="text-primary-container font-headline text-5xl font-black mb-2">+1.200</span>
+<span class="text-on-surface-variant uppercase tracking-widest text-xs font-bold">Entregas Realizadas</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="text-primary-container font-headline text-5xl font-black mb-2">98%</span>
+<span class="text-on-surface-variant uppercase tracking-widest text-xs font-bold">Satisfação</span>
+</div>
+<div class="flex flex-col items-center">
+<span class="text-primary-container font-headline text-5xl font-black mb-2">+50</span>
+<span class="text-on-surface-variant uppercase tracking-widest text-xs font-bold">Caçambas Próprias</span>
+</div>
+</div>
+</section>
+<!-- SECTION 6: FINAL CTA -->
+<section class="py-24 bg-surface px-8 overflow-hidden relative">
+<div class="max-w-5xl mx-auto bg-surface-container-high rounded-2xl p-12 md:p-20 flex flex-col items-center text-center relative z-10 border border-outline-variant/20">
+<h2 class="font-headline text-4xl md:text-6xl font-extrabold text-primary mb-6 leading-tight">Pronto para agilizar sua obra?</h2>
+<p class="text-on-surface-variant text-lg mb-12 max-w-2xl">Não perca tempo com logística amadora. Fale agora com um especialista e garanta sua caçamba hoje mesmo.</p>
+<a class="group relative flex items-center gap-4 bg-[#25D366] text-white px-12 py-6 rounded-xl font-headline text-2xl font-bold transition-all hover:scale-105 active:scale-95 industrial-glow" href="#">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">chat</span>
+                FALAR NO WHATSAPP
+                <div class="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-xl"></div>
+</a>
+<p class="mt-8 text-on-surface-variant/60 flex items-center gap-2">
+<span class="material-symbols-outlined text-sm">bolt</span> Atendimento em menos de 5 minutos
+            </p>
+</div>
+<!-- Decorative Background Gradient -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-primary-container/5 blur-[120px] rounded-full"></div>
+</section>
+<!-- SECTION 7: ORDER FORM -->
+<section class="py-24 bg-surface-container-low px-8 md:px-24" id="orcamento">
+<div class="max-w-7xl mx-auto flex flex-col lg:flex-row gap-16">
+<!-- Left: Form (60%) -->
+<div class="lg:w-[60%]">
+<h3 class="font-headline text-3xl font-extrabold text-primary mb-10">Solicitar Orçamento Personalizado</h3>
+<form class="grid grid-cols-1 md:grid-cols-2 gap-6">
+<div class="flex flex-col gap-2">
+<label class="text-xs font-bold uppercase tracking-widest text-on-surface-variant">Nome Completo</label>
+<input class="bg-surface-container-lowest border-b-2 border-outline/20 focus:border-primary-container transition-colors p-4 text-on-surface outline-none rounded-t" placeholder="Seu nome" type="text"/>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-xs font-bold uppercase tracking-widest text-on-surface-variant">WhatsApp</label>
+<input class="bg-surface-container-lowest border-b-2 border-outline/20 focus:border-primary-container transition-colors p-4 text-on-surface outline-none rounded-t" placeholder="(00) 00000-0000" type="tel"/>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-xs font-bold uppercase tracking-widest text-on-surface-variant">E-mail</label>
+<input class="bg-surface-container-lowest border-b-2 border-outline/20 focus:border-primary-container transition-colors p-4 text-on-surface outline-none rounded-t" placeholder="seu@email.com" type="email"/>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-xs font-bold uppercase tracking-widest text-on-surface-variant">CEP</label>
+<input class="bg-surface-container-lowest border-b-2 border-outline/20 focus:border-primary-container transition-colors p-4 text-on-surface outline-none rounded-t" placeholder="00000-000" type="text"/>
+</div>
+<div class="md:col-span-2 flex flex-col gap-2">
+<label class="text-xs font-bold uppercase tracking-widest text-on-surface-variant">Endereço da Obra</label>
+<input class="bg-surface-container-lowest border-b-2 border-outline/20 focus:border-primary-container transition-colors p-4 text-on-surface outline-none rounded-t" placeholder="Rua, Número, Bairro" type="text"/>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-xs font-bold uppercase tracking-widest text-on-surface-variant">Tamanho da Caçamba</label>
+<select class="bg-surface-container-lowest border-b-2 border-outline/20 focus:border-primary-container transition-colors p-4 text-on-surface outline-none rounded-t appearance-none">
+<option>4m³ - Residencial</option>
+<option>7m³ - Industrial</option>
+<option>Combo Titan</option>
+</select>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-xs font-bold uppercase tracking-widest text-on-surface-variant">Data/Horário Desejado</label>
+<input class="bg-surface-container-lowest border-b-2 border-outline/20 focus:border-primary-container transition-colors p-4 text-on-surface outline-none rounded-t" type="datetime-local"/>
+</div>
+<div class="md:col-span-2 mt-6 p-6 bg-primary-container/10 rounded-xl border border-primary-container/20 flex justify-between items-center">
+<span class="font-bold text-primary uppercase tracking-widest">Total Estimado</span>
+<span class="font-headline text-4xl font-black text-primary-container">R$ 380,00</span>
+</div>
+<button class="md:col-span-2 py-6 bg-gradient-to-br from-primary to-primary-container text-on-primary font-headline font-black text-xl rounded-xl hover:shadow-[0_0_30px_rgba(255,197,108,0.3)] transition-all uppercase tracking-widest">ENVIAR PEDIDO</button>
+</form>
+</div>
+<!-- Right: Support & Info (40%) -->
+<div class="lg:w-[40%] flex flex-col gap-8">
+<div class="bg-surface-container-high p-10 rounded-xl border border-outline-variant/10">
+<h4 class="font-headline text-2xl font-bold text-primary mb-6 flex items-center gap-3">
+<span class="material-symbols-outlined text-primary-container">help</span> Ajuda Especializada
+                    </h4>
+<p class="text-on-surface-variant mb-8">Tem dúvidas sobre qual caçamba escolher para o seu tipo de resíduo? Nossos engenheiros de logística estão prontos para orientar.</p>
+<a class="flex items-center gap-4 text-primary-container font-bold group" href="#">
+<span class="material-symbols-outlined bg-primary-container text-on-primary p-2 rounded-lg group-hover:scale-110 transition-transform">phone_in_talk</span>
+                        CENTRAL DE DÚVIDAS
+                    </a>
+</div>
+<div class="bg-surface-container-high p-10 rounded-xl border border-outline-variant/10">
+<h4 class="font-headline text-2xl font-bold text-primary mb-6 flex items-center gap-3">
+<span class="material-symbols-outlined text-primary-container">schedule</span> Horário Industrial
+                    </h4>
+<div class="space-y-4">
+<div class="flex justify-between items-center pb-2 border-b border-outline-variant/20">
+<span class="text-on-surface-variant">Segunda - Sexta</span>
+<span class="text-primary font-bold">07:00 - 19:00</span>
+</div>
+<div class="flex justify-between items-center pb-2 border-b border-outline-variant/20">
+<span class="text-on-surface-variant">Sábados</span>
+<span class="text-primary font-bold">08:00 - 13:00</span>
+</div>
+<div class="flex justify-between items-center opacity-50">
+<span class="text-on-surface-variant">Domingos</span>
+<span class="text-primary font-bold">Fechado</span>
+</div>
+</div>
+</div>
+<div class="relative rounded-xl overflow-hidden h-48 border border-outline-variant/10">
+<img class="w-full h-full object-cover grayscale brightness-50" data-alt="Modern logistic warehouse management office interior with monitors and technical gear" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCJYYqQ6QXbW9Sq8PS50ZKQgH1p8rn2l3C85zwua2D5EkzmS8lE-YUr5vNDGAQr2GUQdbdyk11iFTOVTTdKWiJMwJGa8CGTUfGB7hBj2OEXO50HARBEaRsyvmZ_w_qG8jIZ7U_yd4D1C7mWZyh29RDxvQk-T_mYa4oygERHqxB3J9-kVoifTAPQZ1SsUqMH5kqGIz7jDmUD-QnAdqDO3H5hzvFrwpxvMgy1dm6WAmfg2KkCEEJ-GVBSSyX6-656Qleu5mHrKlrZEFk"/>
+<div class="absolute inset-0 flex items-center justify-center">
+<span class="text-xs font-black bg-background/80 px-4 py-2 rounded border border-primary-container/20">SÃO PAULO CENTRAL HUB</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- FOOTER -->
+<footer class="bg-[#051131] w-full border-t border-[#1e2849]/30">
+<div class="flex flex-col md:flex-row justify-between items-center px-12 py-10 gap-6">
+<div class="flex flex-col gap-2">
+<span class="text-xl font-bold text-[#ffc56c] font-headline">TITAN RENTALS</span>
+<p class="text-[#d4c4b2] text-xs font-['Inter']">Logística Pesada para Descarte Consciente.</p>
+</div>
+<div class="flex flex-wrap justify-center gap-8">
+<a class="text-[#d4c4b2] hover:text-[#ffc56c] transition-colors text-sm font-['Inter'] tracking-wide" href="#">Política de Privacidade</a>
+<a class="text-[#d4c4b2] hover:text-[#ffc56c] transition-colors text-sm font-['Inter'] tracking-wide" href="#">Termos de Serviço</a>
+<a class="text-[#d4c4b2] hover:text-[#ffc56c] transition-colors text-sm font-['Inter'] tracking-wide" href="#">Suporte PIX</a>
+<a class="text-[#d4c4b2] hover:text-[#ffc56c] transition-colors text-sm font-['Inter'] tracking-wide" href="#">Contato</a>
+</div>
+<span class="text-[#d4c4b2] text-sm font-['Inter'] tracking-wide">© 2024 Titan Logística Industrial. Todos os direitos reservados.</span>
+</div>
+</footer>
+</body></html>

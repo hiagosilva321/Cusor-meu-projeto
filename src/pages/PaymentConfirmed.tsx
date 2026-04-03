@@ -1,23 +1,46 @@
 import { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { supabase } from '@/integrations/supabase/client';
+import { useParams, Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { apiPost, type PublicOrderStatusRequest, type PublicOrderStatusResponse } from '@/lib/api';
+import { getOrderAccessToken } from '@/lib/order-access';
 import { SiteHeader } from '@/components/landing/SiteHeader';
 import { SiteFooter } from '@/components/landing/SiteFooter';
 import { Button } from '@/components/ui/button';
 import { CheckCircle, Home, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { useWhatsApp } from '@/contexts/WhatsAppContext';
 
 const PaymentConfirmed = () => {
   const { orderId } = useParams<{ orderId: string }>();
-  const [order, setOrder] = useState<any>(null);
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { rememberReferralSource } = useWhatsApp();
+  const [order, setOrder] = useState<PublicOrderStatusResponse | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     if (!orderId) return;
-    supabase.from('orders').select('*').eq('id', orderId).single().then(({ data }) => {
-      setOrder(data);
-      setLoading(false);
-    });
-  }, [orderId]);
+    const accessToken = getOrderAccessToken(orderId, searchParams.get('token'));
+
+    if (!accessToken) {
+      toast.error('Link de confirmação inválido ou expirado.');
+      navigate('/', { replace: true });
+      return;
+    }
+
+    apiPost<PublicOrderStatusResponse, PublicOrderStatusRequest>(
+      'get-order-status',
+      { order_id: orderId, access_token: accessToken },
+    )
+      .then((data) => {
+        rememberReferralSource(data.referral_source);
+        setOrder(data);
+      })
+      .catch(() => {
+        toast.error('Pedido não encontrado ou link inválido.');
+        navigate('/', { replace: true });
+      })
+      .finally(() => setLoading(false));
+  }, [orderId, navigate, rememberReferralSource, searchParams]);
 
   if (loading) {
     return (

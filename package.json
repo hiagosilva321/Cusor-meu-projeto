@@ -6,10 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "deploy": "node deploy/prepare-deploy.mjs",
-    "deploy:vps": "node deploy/prepare-deploy.mjs && node deploy/sync-dist-vps.mjs",
-    "check:supabase": "node deploy/check-supabase-env.mjs",
-    "create-admin": "node deploy/create-admin-user.mjs",
+    "check:supabase": "node scripts/check-supabase-env.mjs",
+    "docs:check": "node scripts/check-repo-guardrail.mjs",
+    "ci:check": "npm run docs:check && npm run lint && npm run test && npm run build && npm run check:supabase",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "preview": "vite preview",

@@ -1,92 +1,99 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { MessageCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { useWhatsApp } from '@/contexts/WhatsAppContext';
-import { AnimateOnScroll, StaggerContainer, StaggerItem } from '@/components/ui/animate-on-scroll';
+import { motion } from 'framer-motion';
 
 interface DumpsterSize {
-  id: string;
-  size: string;
-  title: string;
-  description: string;
-  price: number;
-  order_index: number;
+  id: string; size: string; title: string; description: string; price: number; order_index: number;
 }
 
+const fadeIn = (delay: number) => ({
+  initial: { opacity: 0, y: 28 },
+  whileInView: { opacity: 1, y: 0 },
+  viewport: { once: true, margin: '-40px' as const },
+  transition: { delay, duration: 0.6, ease: [0.22, 1, 0.36, 1] },
+});
+
 export function SizesSection() {
-  const { getWhatsAppUrl, trackClick, available } = useWhatsApp();
+  const { getWhatsAppUrl, getCheckoutUrl, trackClick, available } = useWhatsApp();
   const [sizes, setSizes] = useState<DumpsterSize[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchSizes() {
-      const { data } = await supabase
-        .from('dumpster_sizes')
-        .select('*')
-        .eq('active', true)
-        .order('order_index');
-      if (data) setSizes(data);
-      setLoading(false);
-    }
-    fetchSizes();
+    supabase.from('dumpster_sizes').select('*').eq('active', true).order('order_index')
+      .then(({ data }) => { if (data) setSizes(data); setLoading(false); });
   }, []);
 
   if (loading || sizes.length === 0) return null;
 
-  const popularIndex = sizes.findIndex(s => s.size === '5m³');
+  const display = sizes.length > 4 ? sizes.filter(s => s.size !== '4m³') : sizes;
 
   return (
-    <section id="tamanhos" className="py-20 md:py-28">
+    <section id="tamanhos" className="py-14 md:py-20 scroll-mt-20" style={{ background: '#051131' }}>
       <div className="container">
-        <AnimateOnScroll className="text-center max-w-2xl mx-auto mb-16">
-          <span className="text-sm font-semibold text-accent uppercase tracking-wider">Tamanhos e valores</span>
-          <h2 className="font-display text-3xl md:text-4xl font-bold text-foreground mt-3 mb-4">
-            Escolha o tamanho ideal
+        <motion.div {...fadeIn(0)} className="text-center mb-10">
+          <h2 className="font-display text-2xl md:text-3xl font-extrabold tracking-tight" style={{ color: '#ffe8cb' }}>
+            Quanto custa?
           </h2>
-          <p className="text-muted-foreground text-lg">Caçambas de diversos tamanhos para qualquer tipo de obra.</p>
-        </AnimateOnScroll>
+          <p className="mt-2 text-sm" style={{ color: '#9f8e79' }}>
+            Preço fechado — entrega, permanência e retirada inclusos.
+          </p>
+        </motion.div>
 
-        <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {sizes.map((item, index) => {
-            const isPopular = index === popularIndex;
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
+          {display.map((item, i) => {
+            const popular = item.size === '5m³';
             return (
-              <StaggerItem key={item.id}>
-                <div className={`relative rounded-xl border-2 p-6 flex flex-col h-full transition-all duration-300 hover:shadow-xl hover:-translate-y-1 ${
-                  isPopular ? 'border-accent bg-accent/5 shadow-lg' : 'border-border bg-card hover:border-accent/50'
-                }`}>
-                  {isPopular && (
-                    <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-4 py-1 bg-accent text-accent-foreground text-xs font-bold rounded-full whitespace-nowrap">
-                      MAIS PEDIDO
-                    </span>
-                  )}
-                  <div className="text-center mb-6">
-                    <span className="font-display text-4xl font-extrabold text-foreground">{item.size}</span>
-                    <h3 className="font-display text-lg font-bold text-foreground mt-2">{item.title}</h3>
-                  </div>
-                  <p className="text-muted-foreground text-sm text-center mb-6 flex-1">{item.description}</p>
-                  <div className="text-center mb-6">
-                    <span className="text-3xl font-bold text-foreground">
-                      R$ {Number(item.price).toFixed(2).replace('.', ',')}
-                    </span>
-                    <p className="text-xs text-muted-foreground mt-1">incluso entrega e retirada</p>
-                  </div>
-                  {available ? (
-                    <a href={getWhatsAppUrl(`Olá! Tenho interesse na caçamba ${item.size} - ${item.title}.`)} target="_blank" rel="noopener noreferrer" onClick={trackClick}>
-                      <Button variant="whatsapp" className="w-full">
-                        <MessageCircle className="mr-2" size={18} /> Solicitar
-                      </Button>
-                    </a>
-                  ) : (
-                    <Button variant="whatsapp" className="w-full" disabled>
-                      <MessageCircle className="mr-2" size={18} /> Indisponível
-                    </Button>
-                  )}
+              <motion.div key={item.id} {...fadeIn(0.06 + i * 0.08)}
+                className="relative rounded-xl p-5 flex flex-col h-full transition-all duration-300 hover:-translate-y-1"
+                style={{
+                  background: popular
+                    ? 'linear-gradient(180deg, rgba(30,40,73,1) 0%, rgba(20,32,64,1) 100%)'
+                    : 'rgba(19,31,66,0.6)',
+                  boxShadow: popular
+                    ? '0 0 30px rgba(255,197,108,0.08), 0 0 0 1px rgba(255,197,108,0.2)'
+                    : '0 0 0 1px rgba(219,225,255,0.04)',
+                }}
+              >
+                {popular && (
+                  <span className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-3 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded-full"
+                    style={{ background: '#ffc56c', color: '#051131' }}>
+                    Mais pedido
+                  </span>
+                )}
+
+                <div className="text-center mb-4 pt-1">
+                  <span className="font-display text-3xl font-extrabold" style={{ color: '#dbe1ff' }}>{item.size}</span>
+                  <h3 className="text-sm font-bold mt-0.5" style={{ color: popular ? '#ffe8cb' : '#b8c0d6' }}>{item.title}</h3>
                 </div>
-              </StaggerItem>
+
+                <p className="text-xs text-center mb-4 flex-1 leading-relaxed" style={{ color: '#9f8e79' }}>{item.description}</p>
+
+                <div className="text-center mb-4">
+                  <span className="text-2xl font-extrabold" style={{ color: '#ffc56c' }}>
+                    R$ {Number(item.price).toFixed(2).replace('.', ',')}
+                  </span>
+                </div>
+
+                {available ? (
+                  <a href={getWhatsAppUrl(`Olá! Quero a caçamba ${item.size} — ${item.title}.`)}
+                    target="_blank" rel="noopener noreferrer" onClick={(e) => trackClick(e, 'tamanhos')}
+                    className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg text-sm font-semibold text-white transition-all duration-200"
+                    style={{ background: '#12a749', boxShadow: '0 4px 16px rgba(18,167,73,0.25)' }}>
+                    <MessageCircle size={15} strokeWidth={2.5} /> Solicitar
+                  </a>
+                ) : (
+                  <a href={getCheckoutUrl()}
+                    className="flex items-center justify-center gap-2 w-full py-2.5 rounded-lg text-sm font-bold transition-all"
+                    style={{ background: 'linear-gradient(135deg, #ffe8cb, #ffc56c)', color: '#051131' }}>
+                    Solicitar
+                  </a>
+                )}
+              </motion.div>
             );
           })}
-        </StaggerContainer>
+        </div>
       </div>
     </section>
   );

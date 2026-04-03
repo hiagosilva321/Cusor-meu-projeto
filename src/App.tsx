@@ -2,9 +2,9 @@ import { lazy, Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { WhatsAppProvider } from "@/contexts/WhatsAppContext";
+import { SiteSettingsProvider } from "@/contexts/SiteSettingsContext";
 import Index from "./pages/Index.tsx";
 import AdminLogin from "./pages/admin/AdminLogin.tsx";
 
@@ -13,14 +13,10 @@ const Payment = lazy(() => import("./pages/Payment.tsx"));
 const PaymentConfirmed = lazy(() => import("./pages/PaymentConfirmed.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard.tsx"));
-const AdminLeads = lazy(() => import("./pages/admin/AdminLeads.tsx"));
-const AdminOrders = lazy(() => import("./pages/admin/AdminOrders.tsx"));
-const AdminOffers = lazy(() => import("./pages/admin/AdminOffers.tsx"));
-const AdminSizes = lazy(() => import("./pages/admin/AdminSizes.tsx"));
+const AdminPedidos = lazy(() => import("./pages/admin/AdminPedidos.tsx"));
+const AdminCatalogo = lazy(() => import("./pages/admin/AdminCatalogo.tsx"));
 const AdminWhatsApp = lazy(() => import("./pages/admin/AdminWhatsApp.tsx"));
-const AdminCounters = lazy(() => import("./pages/admin/AdminCounters.tsx"));
-const AdminRegions = lazy(() => import("./pages/admin/AdminRegions.tsx"));
-const AdminSettings = lazy(() => import("./pages/admin/AdminSettings.tsx"));
+const AdminConfiguracoes = lazy(() => import("./pages/admin/AdminConfiguracoes.tsx"));
 
 const PageLoader = () => (
   <div className="flex min-h-[100dvh] min-h-screen w-full items-center justify-center bg-muted text-muted-foreground">
@@ -37,8 +33,8 @@ const queryClient = new QueryClient({
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
-      <Toaster />
       <Sonner />
+      <SiteSettingsProvider>
       <WhatsAppProvider>
         <BrowserRouter>
           <Suspense fallback={<PageLoader />}>
@@ -49,19 +45,16 @@ const App = () => (
               <Route path="/pagamento-confirmado/:orderId" element={<PaymentConfirmed />} />
               <Route path="/admin" element={<AdminLogin />} />
               <Route path="/admin/dashboard" element={<AdminDashboard />} />
-              <Route path="/admin/leads" element={<AdminLeads />} />
-              <Route path="/admin/orders" element={<AdminOrders />} />
-              <Route path="/admin/offers" element={<AdminOffers />} />
-              <Route path="/admin/sizes" element={<AdminSizes />} />
+              <Route path="/admin/pedidos" element={<AdminPedidos />} />
+              <Route path="/admin/catalogo" element={<AdminCatalogo />} />
               <Route path="/admin/whatsapp" element={<AdminWhatsApp />} />
-              <Route path="/admin/counters" element={<AdminCounters />} />
-              <Route path="/admin/regions" element={<AdminRegions />} />
-              <Route path="/admin/settings" element={<AdminSettings />} />
+              <Route path="/admin/configuracoes" element={<AdminConfiguracoes />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
         </BrowserRouter>
       </WhatsAppProvider>
+      </SiteSettingsProvider>
     </TooltipProvider>
   </QueryClientProvider>
 );
