@@ -48,6 +48,8 @@ const Checkout = () => {
   const [selectedPrice, setSelectedPrice] = useState(0);
   const [step, setStep] = useState(1);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [helperPrice, setHelperPrice] = useState(125);
+  const [ajudantes, setAjudantes] = useState(0);
   const [form, setForm] = useState({
     nome: '', whatsapp: '', email: '', cpf_cnpj: '',
     cep: '', endereco: '', numero: '', complemento: '',
@@ -59,8 +61,12 @@ const Checkout = () => {
   useEffect(() => {
     async function fetchSizes() {
       try {
-        const { data, error } = await supabase
-          .from('dumpster_sizes').select('size, title, price').eq('active', true).order('order_index');
+        const [sizesRes, settingsRes] = await Promise.all([
+          supabase.from('dumpster_sizes').select('size, title, price').eq('active', true).order('order_index'),
+          supabase.from('site_settings').select('helper_price').limit(1).single(),
+        ]);
+        if (settingsRes.data?.helper_price) setHelperPrice(Number(settingsRes.data.helper_price));
+        const { data, error } = sizesRes;
         if (error) throw error;
         if (data && data.length > 0) {
           setSizeOptions(data);
@@ -122,7 +128,9 @@ const Checkout = () => {
     } catch (err) { console.error('Erro ao buscar CEP:', err); }
   };
 
-  const valorTotal = selectedPrice * parseInt(form.quantidade || '1');
+  const valorCacamba = selectedPrice * parseInt(form.quantidade || '1');
+  const valorAjudantes = ajudantes * helperPrice;
+  const valorTotal = valorCacamba + valorAjudantes;
   const sizesReady = sizeOptions.length > 0 && Boolean(form.tamanho);
 
   const validateStep = (targetStep: number): boolean => {
@@ -168,6 +176,8 @@ const Checkout = () => {
         observacoes: form.observacoes.trim() || null,
         data_entrega: form.data_entrega || null, horario_entrega: form.horario_entrega || null,
         referral_source: referralSource,
+        ajudantes,
+        valor_ajudantes: valorAjudantes,
       };
       const data = await apiPost<CreatePixChargeResponse, CreatePixChargeRequest>('create-pix-charge', body);
       supabase.from('leads').insert({
@@ -178,6 +188,7 @@ const Checkout = () => {
         bairro: form.bairro.trim() || '', cidade: form.cidade.trim() || '',
         estado: form.estado.trim() || '', tamanho: form.tamanho,
         quantidade: parseInt(form.quantidade), observacoes: form.observacoes.trim() || '',
+        ajudantes,
         status: 'Não pago', order_id: data.order_id,
       }).then(({ error }) => { if (error) console.error('[Lead]', error); });
       storeOrderAccessToken(data.order_id, data.order_token);
@@ -309,12 +320,19 @@ const Checkout = () => {
                         </div>
                         {fieldError('tamanho')}
 
-                        {/* Quantity */}
+                        {/* Quantity + Helpers */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                           <div>
                             <label className={labelCls}>Quantidade</label>
                             <select name="quantidade" value={form.quantidade} onChange={handleChange} className={selectDark}>
                               {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n} caçamba{n > 1 ? 's' : ''}</option>)}
+                            </select>
+                          </div>
+                          <div>
+                            <label className={labelCls}>Ajudantes <span className="normal-case tracking-normal font-normal text-[#d2c5b2]/60">(R$ {helperPrice}/un)</span></label>
+                            <select value={ajudantes} onChange={(e) => setAjudantes(Number(e.target.value))} className={selectDark}>
+                              <option value={0}>Sem ajudante</option>
+                              {[1, 2, 3, 4].map(n => <option key={n} value={n}>{n} ajudante{n > 1 ? 's' : ''} (+R$ {(n * helperPrice).toFixed(0)})</option>)}
                             </select>
                           </div>
                         </div>
@@ -476,6 +494,12 @@ const Checkout = () => {
                     <span className="text-[#d2c5b2]">Unitário</span>
                     <span className="text-white">R$ {selectedPrice.toFixed(2)}</span>
                   </div>
+                  {ajudantes > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-[#d2c5b2]">Ajudantes ({ajudantes}x)</span>
+                      <span className="text-white">R$ {valorAjudantes.toFixed(2)}</span>
+                    </div>
+                  )}
                   <div className="h-px bg-white/[0.06]" />
                   <div className="flex justify-between items-baseline">
                     <span className="font-bold text-white text-base">Total</span>

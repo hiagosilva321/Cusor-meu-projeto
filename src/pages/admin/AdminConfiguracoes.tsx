@@ -111,6 +111,7 @@ export default function AdminConfiguracoes() {
         whatsapp_principal: settings.whatsapp_principal,
         endereco_empresa: settings.endereco_empresa,
         email_contato: settings.email_contato,
+        helper_price: Number(settings.helper_price) || 125,
       })
       .eq('id', settings.id);
 
@@ -324,6 +325,21 @@ export default function AdminConfiguracoes() {
                       value={settings?.email_contato || ''}
                       onChange={(e) => handleSettingsChange('email_contato', e.target.value)}
                     />
+                  </div>
+
+                  <hr className="my-4" />
+
+                  <div className="space-y-1">
+                    <Label htmlFor="setting-helper-price">Valor por Ajudante (R$)</Label>
+                    <Input
+                      id="setting-helper-price"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={settings?.helper_price ?? 125}
+                      onChange={(e) => setSettings(prev => prev ? { ...prev, helper_price: Number(e.target.value) } : prev)}
+                    />
+                    <p className="text-xs text-muted-foreground">Este valor aparece no checkout quando o cliente seleciona ajudantes.</p>
                   </div>
                 </CardContent>
               </Card>

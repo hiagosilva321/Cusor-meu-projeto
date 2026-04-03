@@ -70,6 +70,7 @@ export type Database = {
       }
       leads: {
         Row: {
+          ajudantes: number
           bairro: string | null
           cep: string | null
           cidade: string | null
@@ -92,6 +93,7 @@ export type Database = {
           whatsapp: string
         }
         Insert: {
+          ajudantes?: number
           bairro?: string | null
           cep?: string | null
           cidade?: string | null
@@ -114,6 +116,7 @@ export type Database = {
           whatsapp: string
         }
         Update: {
+          ajudantes?: number
           bairro?: string | null
           cep?: string | null
           cidade?: string | null
@@ -139,6 +142,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          ajudantes: number
           bairro: string | null
           cep: string | null
           cidade: string | null
@@ -169,11 +173,13 @@ export type Database = {
           status: string
           tamanho: string
           updated_at: string
+          valor_ajudantes: number
           valor_total: number
           valor_unitario: number
           whatsapp: string
         }
         Insert: {
+          ajudantes?: number
           bairro?: string | null
           cep?: string | null
           cidade?: string | null
@@ -204,11 +210,13 @@ export type Database = {
           status?: string
           tamanho: string
           updated_at?: string
+          valor_ajudantes?: number
           valor_total?: number
           valor_unitario?: number
           whatsapp: string
         }
         Update: {
+          ajudantes?: number
           bairro?: string | null
           cep?: string | null
           cidade?: string | null
@@ -239,6 +247,7 @@ export type Database = {
           status?: string
           tamanho?: string
           updated_at?: string
+          valor_ajudantes?: number
           valor_total?: number
           valor_unitario?: number
           whatsapp?: string
@@ -352,6 +361,7 @@ export type Database = {
           created_at: string
           email_contato: string | null
           endereco_empresa: string | null
+          helper_price: number
           id: string
           logo_url: string | null
           site_name: string
@@ -364,6 +374,7 @@ export type Database = {
           created_at?: string
           email_contato?: string | null
           endereco_empresa?: string | null
+          helper_price?: number
           id?: string
           logo_url?: string | null
           site_name?: string
@@ -376,6 +387,7 @@ export type Database = {
           created_at?: string
           email_contato?: string | null
           endereco_empresa?: string | null
+          helper_price?: number
           id?: string
           logo_url?: string | null
           site_name?: string

@@ -21,6 +21,8 @@ export interface CreatePixChargeRequest {
   data_entrega: string | null;
   horario_entrega: string | null;
   referral_source?: string | null;
+  ajudantes?: number;
+  valor_ajudantes?: number;
 }
 
 export interface CreatePixChargeResponse {

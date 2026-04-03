@@ -22,17 +22,19 @@ serve(async (req) => {
   }
 
   try {
-    const { nome, whatsapp, email, cpf_cnpj, cep, endereco, numero, complemento, bairro, cidade, estado, tamanho, quantidade, valor_unitario, observacoes, data_entrega, horario_entrega, referral_source } = await req.json();
+    const { nome, whatsapp, email, cpf_cnpj, cep, endereco, numero, complemento, bairro, cidade, estado, tamanho, quantidade, valor_unitario, observacoes, data_entrega, horario_entrega, referral_source, ajudantes, valor_ajudantes } = await req.json();
 
     if (!nome || !whatsapp || !tamanho || !valor_unitario) {
       return new Response(JSON.stringify({ error: 'Campos obrigatorios: nome, whatsapp, tamanho, valor_unitario' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     const qtd = Math.max(1, Math.min(Number(quantidade) || 1, 99));
+    const numAjudantes = Math.max(0, Math.min(Number(ajudantes) || 0, 10));
+    const totalAjudantes = Number(valor_ajudantes) || 0;
     if (typeof valor_unitario !== 'number' || valor_unitario <= 0 || valor_unitario > 100000) {
       return new Response(JSON.stringify({ error: 'Valor unitario invalido.' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
-    const valor_total = valor_unitario * qtd;
+    const valor_total = (valor_unitario * qtd) + totalAjudantes;
     const amount = Math.round(valor_total * 100); // centavos
 
     const FASTSOFT_SECRET_KEY = Deno.env.get('FASTSOFT_SECRET_KEY');
@@ -176,6 +178,8 @@ serve(async (req) => {
       data_entrega: data_entrega || null,
       horario_entrega: horario_entrega || null,
       referral_source: referral_source || null,
+      ajudantes: numAjudantes,
+      valor_ajudantes: totalAjudantes,
     }).select().single();
 
     if (dbError) {
