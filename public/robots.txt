@@ -1,24 +1,4 @@
-User-agent: Googlebot
-Allow: /
-Disallow: /admin
-Disallow: /painel-interno-cacambaja
-
-User-agent: Bingbot
-Allow: /
-Disallow: /admin
-Disallow: /painel-interno-cacambaja
-
-User-agent: Twitterbot
-Allow: /
-Disallow: /admin
-Disallow: /painel-interno-cacambaja
-
-User-agent: facebookexternalhit
-Allow: /
-Disallow: /admin
-Disallow: /painel-interno-cacambaja
-
 User-agent: *
 Allow: /
-Disallow: /admin
-Disallow: /painel-interno-cacambaja
+Disallow: /checkout
+Disallow: /pagamento
