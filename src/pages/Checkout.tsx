@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
@@ -12,8 +11,13 @@ import { getStoredReferralSource } from '@/lib/whatsapp-sticky';
 import { SiteHeader } from '@/components/landing/SiteHeader';
 import { SiteFooter } from '@/components/landing/SiteFooter';
 import { useWhatsApp } from '@/contexts/WhatsAppContext';
-import { ShoppingCart, MapPin, User, CreditCard, Loader2, CalendarDays, CheckCircle2, AlertCircle } from 'lucide-react';
+import {
+  ShoppingCart, MapPin, User, CreditCard, Loader2,
+  CalendarDays, Check, AlertCircle, ChevronRight, ChevronLeft,
+} from 'lucide-react';
 import { toast } from 'sonner';
+
+/* ─── Types ─── */
 
 interface DumpsterSize {
   size: string;
@@ -21,11 +25,21 @@ interface DumpsterSize {
   price: number;
 }
 
+/* ─── Styles ─── */
+
+const glassCard = 'rounded-2xl border border-white/[0.06] bg-[#0e1a38]/80 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.3)]';
+const inputDark = 'w-full h-11 rounded-xl bg-[#0a1230] border border-white/[0.08] px-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400/30 focus:border-amber-400/30 transition-all duration-200';
+const selectDark = `${inputDark} appearance-none cursor-pointer`;
+const labelCls = 'text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5 block';
+
+/* ─── Component ─── */
+
 const Checkout = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { assignedReferralSource } = useWhatsApp();
   const referralSource = searchParams.get('ref') || getStoredReferralSource() || assignedReferralSource || null;
+
   const [loading, setLoading] = useState(false);
   const [loadingSizes, setLoadingSizes] = useState(true);
   const [sizesError, setSizesError] = useState('');
@@ -45,13 +59,8 @@ const Checkout = () => {
     async function fetchSizes() {
       try {
         const { data, error } = await supabase
-          .from('dumpster_sizes')
-          .select('size, title, price')
-          .eq('active', true)
-          .order('order_index');
-
+          .from('dumpster_sizes').select('size, title, price').eq('active', true).order('order_index');
         if (error) throw error;
-
         if (data && data.length > 0) {
           setSizeOptions(data);
           setForm(f => ({ ...f, tamanho: data[0].size }));
@@ -59,7 +68,6 @@ const Checkout = () => {
           setSizesError('');
           return;
         }
-
         setSizeOptions([]);
         setSizesError('Nenhum tamanho disponível no momento.');
       } catch (err) {
@@ -76,23 +84,25 @@ const Checkout = () => {
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     let masked = value;
-
     if (name === 'whatsapp') masked = maskPhone(value);
     else if (name === 'cpf_cnpj') masked = maskCpfCnpj(value);
     else if (name === 'cep') masked = maskCep(value);
-
     setForm(prev => ({ ...prev, [name]: masked }));
     setErrors(prev => ({ ...prev, [name]: '' }));
-
     if (name === 'tamanho') {
       const found = sizeOptions.find(s => s.size === value);
       if (found) setSelectedPrice(found.price);
     }
-
     if (name === 'cep') {
       const cleanCep = unmask(value);
       if (cleanCep.length === 8) fetchAddressByCep(cleanCep);
     }
+  };
+
+  const selectSize = (size: DumpsterSize) => {
+    setForm(prev => ({ ...prev, tamanho: size.size }));
+    setSelectedPrice(size.price);
+    setErrors(prev => ({ ...prev, tamanho: '' }));
   };
 
   const fetchAddressByCep = async (cep: string) => {
@@ -108,9 +118,7 @@ const Checkout = () => {
           estado: data.uf || prev.estado,
         }));
       }
-    } catch (err) {
-      console.error('Erro ao buscar CEP:', err);
-    }
+    } catch (err) { console.error('Erro ao buscar CEP:', err); }
   };
 
   const valorTotal = selectedPrice * parseInt(form.quantidade || '1');
@@ -118,16 +126,12 @@ const Checkout = () => {
 
   const validateStep = (targetStep: number): boolean => {
     if (targetStep === 1 && !sizesReady) {
-      const message = sizesError || 'Aguarde os tamanhos carregarem antes de continuar.';
-      setErrors({ tamanho: message });
-      toast.error(message);
-      return false;
+      const message = sizesError || 'Aguarde os tamanhos carregarem.';
+      setErrors({ tamanho: message }); toast.error(message); return false;
     }
-
     const schemas = { 1: checkoutStep1Schema, 2: checkoutStep2Schema, 3: checkoutStep3Schema };
     const schema = schemas[targetStep as keyof typeof schemas];
     if (!schema) return true;
-
     const result = schema.safeParse(form);
     if (!result.success) {
       const fieldErrors: Record<string, string> = {};
@@ -136,365 +140,358 @@ const Checkout = () => {
         if (!fieldErrors[field]) fieldErrors[field] = issue.message;
       }
       setErrors(fieldErrors);
-      const firstError = result.error.issues[0]?.message;
-      if (firstError) toast.error(firstError);
+      toast.error(result.error.issues[0]?.message);
       return false;
     }
-    setErrors({});
-    return true;
+    setErrors({}); return true;
   };
 
   const goToStep = (target: number) => {
-    if (target > step) {
-      if (!validateStep(step)) return;
-    }
+    if (target > step && !validateStep(step)) return;
     setStep(target);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateStep(2) || !validateStep(3)) return;
-
     setLoading(true);
     try {
-      const requestBody: CreatePixChargeRequest = {
-        nome: form.nome.trim(),
-        whatsapp: unmask(form.whatsapp),
-        email: form.email.trim() || null,
-        cpf_cnpj: unmask(form.cpf_cnpj) || null,
-        cep: unmask(form.cep) || null,
-        endereco: form.endereco.trim() || null,
-        numero: form.numero.trim() || null,
-        complemento: form.complemento.trim() || null,
-        bairro: form.bairro.trim() || null,
-        cidade: form.cidade.trim() || null,
-        estado: form.estado.trim() || null,
-        tamanho: form.tamanho,
-        quantidade: parseInt(form.quantidade),
-        valor_unitario: selectedPrice,
+      const body: CreatePixChargeRequest = {
+        nome: form.nome.trim(), whatsapp: unmask(form.whatsapp),
+        email: form.email.trim() || null, cpf_cnpj: unmask(form.cpf_cnpj) || null,
+        cep: unmask(form.cep) || null, endereco: form.endereco.trim() || null,
+        numero: form.numero.trim() || null, complemento: form.complemento.trim() || null,
+        bairro: form.bairro.trim() || null, cidade: form.cidade.trim() || null,
+        estado: form.estado.trim() || null, tamanho: form.tamanho,
+        quantidade: parseInt(form.quantidade), valor_unitario: selectedPrice,
         observacoes: form.observacoes.trim() || null,
-        data_entrega: form.data_entrega || null,
-        horario_entrega: form.horario_entrega || null,
+        data_entrega: form.data_entrega || null, horario_entrega: form.horario_entrega || null,
         referral_source: referralSource,
       };
-
-      // Gera cobrança PIX (cria order no banco)
-      const data = await apiPost<CreatePixChargeResponse, CreatePixChargeRequest>(
-        'create-pix-charge',
-        requestBody,
-      );
-
-      // Fire-and-forget: lead insert não bloqueia navegação ao pagamento
+      const data = await apiPost<CreatePixChargeResponse, CreatePixChargeRequest>('create-pix-charge', body);
       supabase.from('leads').insert({
-        nome: form.nome.trim(),
-        whatsapp: unmask(form.whatsapp),
-        email: form.email.trim() || '',
-        cpf_cnpj: unmask(form.cpf_cnpj) || '',
-        cep: unmask(form.cep) || '',
-        endereco: form.endereco.trim() || '',
-        numero: form.numero.trim() || '',
-        complemento: form.complemento.trim() || '',
-        bairro: form.bairro.trim() || '',
-        cidade: form.cidade.trim() || '',
-        estado: form.estado.trim() || '',
-        tamanho: form.tamanho,
-        quantidade: parseInt(form.quantidade),
-        observacoes: form.observacoes.trim() || '',
-        status: 'Não pago',
-        order_id: data.order_id,
-      }).then(({ error }) => {
-        if (error) console.error('[Lead insert failed]', error);
-      });
-
+        nome: form.nome.trim(), whatsapp: unmask(form.whatsapp),
+        email: form.email.trim() || '', cpf_cnpj: unmask(form.cpf_cnpj) || '',
+        cep: unmask(form.cep) || '', endereco: form.endereco.trim() || '',
+        numero: form.numero.trim() || '', complemento: form.complemento.trim() || '',
+        bairro: form.bairro.trim() || '', cidade: form.cidade.trim() || '',
+        estado: form.estado.trim() || '', tamanho: form.tamanho,
+        quantidade: parseInt(form.quantidade), observacoes: form.observacoes.trim() || '',
+        status: 'Não pago', order_id: data.order_id,
+      }).then(({ error }) => { if (error) console.error('[Lead]', error); });
       storeOrderAccessToken(data.order_id, data.order_token);
       navigate(`/pagamento/${data.order_id}?token=${encodeURIComponent(data.order_token)}`);
     } catch (err: unknown) {
       console.error(err);
       toast.error(err instanceof Error ? err.message : 'Erro ao gerar pagamento. Tente novamente.');
-    } finally {
-      setLoading(false);
-    }
+    } finally { setLoading(false); }
   };
-
-  const selectClasses = "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring";
 
   const fieldError = (name: string) =>
     errors[name] ? (
-      <span id={`error-${name}`} role="alert" className="text-xs text-destructive flex items-center gap-1 mt-1">
-        <AlertCircle size={12} /> {errors[name]}
+      <span role="alert" className="text-xs text-red-400 flex items-center gap-1 mt-1">
+        <AlertCircle size={11} /> {errors[name]}
       </span>
     ) : null;
 
-  const steps = [
+  const stepsConfig = [
     { n: 1, icon: ShoppingCart, label: 'Pedido' },
     { n: 2, icon: User, label: 'Dados' },
     { n: 3, icon: MapPin, label: 'Endereço' },
   ];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen" style={{ background: '#0a1628' }}>
       <SiteHeader />
-      <main className="pt-24 pb-16">
-        <div className="container max-w-4xl">
-          <div className="text-center mb-8">
-            <h1 className="font-display text-3xl md:text-4xl font-bold text-foreground">Finalizar Pedido</h1>
-            <p className="text-muted-foreground mt-2">Preencha os dados e pague com PIX</p>
+
+      <main className="pt-24 pb-20">
+        <div className="container max-w-5xl">
+
+          {/* ═══ Header ═══ */}
+          <div className="text-center mb-10">
+            <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-tight" style={{ color: '#ffe8cb' }}>
+              Finalizar Pedido
+            </h1>
+            <p className="text-slate-400 mt-2 text-sm">Selecione, preencha e pague com PIX</p>
           </div>
 
-          {/* Steps indicator */}
-          <div className="flex items-center justify-center gap-2 mb-8">
-            {steps.map(({ n, icon: Icon, label }) => (
-              <div key={n} className="flex items-center gap-2">
+          {/* ═══ Step Indicator ═══ */}
+          <div className="flex items-center justify-center mb-10">
+            {stepsConfig.map(({ n, label }) => (
+              <div key={n} className="flex items-center">
                 <button
-                  onClick={() => goToStep(n)}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                    step === n
-                      ? 'bg-primary text-primary-foreground shadow-sm'
-                      : step > n
-                        ? 'bg-primary/20 text-primary'
-                        : 'bg-muted text-muted-foreground'
-                  }`}
+                  onClick={() => n < step && goToStep(n)}
+                  className="flex items-center gap-2 group"
                 >
-                  {step > n ? <CheckCircle2 size={14} /> : <Icon size={14} />}
-                  <span className="hidden sm:inline">{label}</span>
-                  <span className="sm:hidden">{n}</span>
+                  <div className={`w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
+                    step > n
+                      ? 'bg-[#1FAD4E] text-white shadow-[0_0_16px_rgba(31,173,78,0.4)]'
+                      : step === n
+                        ? 'bg-amber-500/20 text-amber-400 border-2 border-amber-400/60 shadow-[0_0_16px_rgba(212,168,83,0.3)]'
+                        : 'bg-white/5 text-slate-500 border border-white/10'
+                  }`}>
+                    {step > n ? <Check size={16} strokeWidth={3} /> : n}
+                  </div>
+                  <span className={`text-xs font-semibold uppercase tracking-wider hidden sm:block transition-colors ${
+                    step >= n ? 'text-slate-300' : 'text-slate-600'
+                  }`}>{label}</span>
                 </button>
                 {n < 3 && (
-                  <div className={`w-8 h-0.5 transition-colors ${step > n ? 'bg-primary' : 'bg-muted'}`} />
+                  <div className={`w-12 sm:w-20 h-[2px] mx-2 sm:mx-3 rounded-full transition-all duration-500 ${
+                    step > n ? 'bg-[#1FAD4E]' : 'bg-white/10'
+                  }`} />
                 )}
               </div>
             ))}
           </div>
 
+          {/* ═══ Content ═══ */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="lg:col-span-2 space-y-6">
-              {step === 1 && (
-                <div className="p-6 rounded-xl bg-card border shadow-sm space-y-4">
-                  <h2 className="font-display text-lg font-bold text-foreground flex items-center gap-2">
-                    <ShoppingCart size={18} /> Escolha a Caçamba
-                  </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-foreground mb-1 block">Tamanho *</label>
-                      <select
-                        name="tamanho"
-                        value={form.tamanho}
-                        onChange={handleChange}
-                        className={selectClasses}
-                        disabled={loadingSizes || sizeOptions.length === 0}
-                      >
-                        {loadingSizes && <option value="">Carregando tamanhos...</option>}
-                        {!loadingSizes && sizeOptions.length === 0 && <option value="">Sem tamanhos disponíveis</option>}
-                        {sizeOptions.map(s => (
-                          <option key={s.size} value={s.size}>{s.size} - {s.title} (R$ {s.price.toFixed(2)})</option>
-                        ))}
-                      </select>
-                      {fieldError('tamanho')}
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-foreground mb-1 block">Quantidade *</label>
-                      <select name="quantidade" value={form.quantidade} onChange={handleChange} className={selectClasses}>
-                        {[1, 2, 3, 4, 5].map(n => (
-                          <option key={n} value={n}>{n} caçamba{n > 1 ? 's' : ''}</option>
-                        ))}
-                      </select>
-                    </div>
+
+            {/* ─── Form ─── */}
+            <form onSubmit={handleSubmit} className="lg:col-span-2">
+              <div className="transition-all duration-300" key={step}>
+
+                {/* Step 1: Size Selection */}
+                {step === 1 && (
+                  <div className={`${glassCard} p-6 md:p-8 space-y-6`}>
+                    <h2 className="font-display text-lg font-bold text-white flex items-center gap-2">
+                      <ShoppingCart size={18} className="text-amber-400" /> Escolha a Caçamba
+                    </h2>
+
+                    {loadingSizes ? (
+                      <div className="py-12 text-center">
+                        <Loader2 className="animate-spin mx-auto text-amber-400 mb-3" size={28} />
+                        <p className="text-slate-400 text-sm">Carregando tamanhos...</p>
+                      </div>
+                    ) : (
+                      <>
+                        {/* Size Cards */}
+                        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                          {sizeOptions.map((s) => {
+                            const selected = form.tamanho === s.size;
+                            return (
+                              <button
+                                key={s.size} type="button" onClick={() => selectSize(s)}
+                                className={`relative p-4 rounded-xl text-center transition-all duration-300 cursor-pointer group ${
+                                  selected
+                                    ? 'bg-amber-500/10 border-2 border-amber-400/60 shadow-[0_0_24px_rgba(212,168,83,0.15)]'
+                                    : 'bg-white/[0.03] border border-white/[0.06] hover:border-white/20 hover:bg-white/[0.05]'
+                                }`}
+                              >
+                                <div className={`text-2xl font-extrabold font-display mb-1 transition-colors ${selected ? 'text-amber-400' : 'text-white'}`}>
+                                  {s.size}
+                                </div>
+                                <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">{s.title}</div>
+                                <div className={`text-lg font-bold font-display ${selected ? 'text-amber-300' : 'text-white/80'}`}>
+                                  R$ {s.price.toFixed(0)}
+                                </div>
+                                {selected && (
+                                  <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center">
+                                    <Check size={12} className="text-[#0a1628]" strokeWidth={3} />
+                                  </div>
+                                )}
+                              </button>
+                            );
+                          })}
+                        </div>
+                        {fieldError('tamanho')}
+
+                        {/* Quantity */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                          <div>
+                            <label className={labelCls}>Quantidade</label>
+                            <select name="quantidade" value={form.quantidade} onChange={handleChange} className={selectDark}>
+                              {[1, 2, 3, 4, 5].map(n => <option key={n} value={n}>{n} caçamba{n > 1 ? 's' : ''}</option>)}
+                            </select>
+                          </div>
+                        </div>
+
+                        {/* Scheduling */}
+                        <div className="pt-4 border-t border-white/[0.06]">
+                          <h3 className="font-display text-sm font-bold text-white flex items-center gap-2 mb-4">
+                            <CalendarDays size={14} className="text-amber-400" />
+                            <span className="uppercase tracking-wider">Agendamento</span>
+                          </h3>
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                              <label className={labelCls}>Data desejada</label>
+                              <input type="date" name="data_entrega" value={form.data_entrega} onChange={handleChange}
+                                min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
+                                max={new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0]}
+                                className={inputDark} />
+                            </div>
+                            <div>
+                              <label className={labelCls}>Horário</label>
+                              <select name="horario_entrega" value={form.horario_entrega} onChange={handleChange} className={selectDark}>
+                                <option value="manha">Manhã (7h - 12h)</option>
+                                <option value="tarde">Tarde (12h - 18h)</option>
+                                <option value="dia_todo">Dia todo (7h - 18h)</option>
+                              </select>
+                            </div>
+                          </div>
+                        </div>
+
+                        <Textarea name="observacoes" placeholder="Observações (opcional)" value={form.observacoes}
+                          onChange={handleChange} rows={2} maxLength={1000}
+                          className="bg-[#0a1230] border-white/[0.08] text-white placeholder:text-slate-500 focus:ring-amber-400/30 rounded-xl resize-none" />
+
+                        <button type="button" onClick={() => goToStep(2)} disabled={!sizesReady}
+                          className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-[#0a1628] text-base transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
+                          style={{ background: 'linear-gradient(135deg, #ffe8cb, #D4A853)', boxShadow: '0 8px 24px rgba(212,168,83,0.25)' }}>
+                          Continuar <ChevronRight size={18} />
+                        </button>
+                      </>
+                    )}
                   </div>
-                  <div className="pt-2 border-t">
-                    <h3 className="font-display text-base font-bold text-foreground flex items-center gap-2 mb-3">
-                      <CalendarDays size={16} /> Agendamento de Entrega
-                    </h3>
+                )}
+
+                {/* Step 2: Personal Data */}
+                {step === 2 && (
+                  <div className={`${glassCard} p-6 md:p-8 space-y-5`}>
+                    <h2 className="font-display text-lg font-bold text-white flex items-center gap-2">
+                      <User size={18} className="text-amber-400" /> Seus Dados
+                    </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="text-sm font-medium text-foreground mb-1 block">Data desejada</label>
-                        <Input
-                          type="date"
-                          name="data_entrega"
-                          value={form.data_entrega}
-                          onChange={handleChange}
-                          min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
-                          max={new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0]}
-                        />
+                        <label className={labelCls}>Nome completo *</label>
+                        <input name="nome" placeholder="Nome completo" value={form.nome} onChange={handleChange} maxLength={100}
+                          className={`${inputDark} ${errors.nome ? 'border-red-500/50 focus:ring-red-400/30' : ''}`} />
+                        {fieldError('nome')}
                       </div>
                       <div>
-                        <label className="text-sm font-medium text-foreground mb-1 block">Horário</label>
-                        <select name="horario_entrega" value={form.horario_entrega} onChange={handleChange} className={selectClasses}>
-                          <option value="manha">Manhã (7h - 12h)</option>
-                          <option value="tarde">Tarde (12h - 18h)</option>
-                          <option value="dia_todo">Dia todo (7h - 18h)</option>
-                        </select>
+                        <label className={labelCls}>WhatsApp *</label>
+                        <input name="whatsapp" placeholder="(11) 99999-9999" value={form.whatsapp} onChange={handleChange} maxLength={15}
+                          className={`${inputDark} ${errors.whatsapp ? 'border-red-500/50 focus:ring-red-400/30' : ''}`} />
+                        {fieldError('whatsapp')}
+                      </div>
+                      <div>
+                        <label className={labelCls}>E-mail</label>
+                        <input name="email" placeholder="email@exemplo.com" type="email" value={form.email} onChange={handleChange} maxLength={255}
+                          className={`${inputDark} ${errors.email ? 'border-red-500/50' : ''}`} />
+                        {fieldError('email')}
+                      </div>
+                      <div>
+                        <label className={labelCls}>CPF ou CNPJ</label>
+                        <input name="cpf_cnpj" placeholder="000.000.000-00" value={form.cpf_cnpj} onChange={handleChange} maxLength={18}
+                          className={`${inputDark} ${errors.cpf_cnpj ? 'border-red-500/50' : ''}`} />
+                        {fieldError('cpf_cnpj')}
                       </div>
                     </div>
+                    <div className="flex gap-3 pt-2">
+                      <button type="button" onClick={() => setStep(1)}
+                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border border-white/10 text-slate-300 font-semibold text-sm hover:bg-white/5 transition-colors">
+                        <ChevronLeft size={16} /> Voltar
+                      </button>
+                      <button type="button" onClick={() => goToStep(3)}
+                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-[#0a1628] text-sm transition-all hover:-translate-y-0.5"
+                        style={{ background: 'linear-gradient(135deg, #ffe8cb, #D4A853)', boxShadow: '0 8px 24px rgba(212,168,83,0.2)' }}>
+                        Continuar <ChevronRight size={16} />
+                      </button>
+                    </div>
                   </div>
-                  <Textarea name="observacoes" placeholder="Observações (opcional)" value={form.observacoes} onChange={handleChange} rows={3} maxLength={1000} />
-                  <Button
-                    type="button"
-                    onClick={() => goToStep(2)}
-                    className="w-full"
-                    size="lg"
-                    disabled={loadingSizes || sizeOptions.length === 0}
-                  >
-                    {loadingSizes ? 'Carregando tamanhos...' : 'Continuar'}
-                  </Button>
-                </div>
-              )}
+                )}
 
-              {step === 2 && (
-                <div className="p-6 rounded-xl bg-card border shadow-sm space-y-4">
-                  <h2 className="font-display text-lg font-bold text-foreground flex items-center gap-2">
-                    <User size={18} /> Seus Dados
-                  </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-foreground mb-1 block">Nome completo *</label>
-                      <Input
-                        name="nome"
-                        placeholder="Nome completo"
-                        value={form.nome}
-                        onChange={handleChange}
-                        maxLength={100}
-                        className={errors.nome ? 'border-destructive' : ''}
-                      />
-                      {fieldError('nome')}
+                {/* Step 3: Address */}
+                {step === 3 && (
+                  <div className={`${glassCard} p-6 md:p-8 space-y-5`}>
+                    <h2 className="font-display text-lg font-bold text-white flex items-center gap-2">
+                      <MapPin size={18} className="text-amber-400" /> Endereço de Entrega
+                    </h2>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                      <div>
+                        <label className={labelCls}>CEP</label>
+                        <input name="cep" placeholder="00000-000" value={form.cep} onChange={handleChange} maxLength={9}
+                          className={`${inputDark} ${errors.cep ? 'border-red-500/50' : ''}`} />
+                        {fieldError('cep')}
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className={labelCls}>Endereço</label>
+                        <input name="endereco" placeholder="Rua, Avenida..." value={form.endereco} onChange={handleChange} maxLength={200} className={inputDark} />
+                      </div>
+                      <div>
+                        <label className={labelCls}>Número</label>
+                        <input name="numero" placeholder="Nº" value={form.numero} onChange={handleChange} maxLength={10} className={inputDark} />
+                      </div>
+                      <div>
+                        <label className={labelCls}>Complemento</label>
+                        <input name="complemento" placeholder="Apto, bloco..." value={form.complemento} onChange={handleChange} maxLength={100} className={inputDark} />
+                      </div>
+                      <div>
+                        <label className={labelCls}>Bairro</label>
+                        <input name="bairro" placeholder="Bairro" value={form.bairro} onChange={handleChange} maxLength={100} className={inputDark} />
+                      </div>
+                      <div>
+                        <label className={labelCls}>Cidade</label>
+                        <input name="cidade" placeholder="Cidade" value={form.cidade} onChange={handleChange} maxLength={100} className={inputDark} />
+                      </div>
+                      <div>
+                        <label className={labelCls}>UF</label>
+                        <input name="estado" placeholder="SP" value={form.estado} onChange={handleChange} maxLength={2} className={inputDark} />
+                      </div>
                     </div>
-                    <div>
-                      <label className="text-sm font-medium text-foreground mb-1 block">WhatsApp *</label>
-                      <Input
-                        name="whatsapp"
-                        placeholder="(11) 99999-9999"
-                        value={form.whatsapp}
-                        onChange={handleChange}
-                        maxLength={15}
-                        className={errors.whatsapp ? 'border-destructive' : ''}
-                      />
-                      {fieldError('whatsapp')}
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-foreground mb-1 block">E-mail</label>
-                      <Input
-                        name="email"
-                        placeholder="email@exemplo.com"
-                        type="email"
-                        value={form.email}
-                        onChange={handleChange}
-                        maxLength={255}
-                        className={errors.email ? 'border-destructive' : ''}
-                      />
-                      {fieldError('email')}
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-foreground mb-1 block">CPF ou CNPJ</label>
-                      <Input
-                        name="cpf_cnpj"
-                        placeholder="000.000.000-00"
-                        value={form.cpf_cnpj}
-                        onChange={handleChange}
-                        maxLength={18}
-                        className={errors.cpf_cnpj ? 'border-destructive' : ''}
-                      />
-                      {fieldError('cpf_cnpj')}
+                    <div className="flex gap-3 pt-2">
+                      <button type="button" onClick={() => setStep(2)}
+                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border border-white/10 text-slate-300 font-semibold text-sm hover:bg-white/5 transition-colors">
+                        <ChevronLeft size={16} /> Voltar
+                      </button>
+                      <button type="submit" disabled={loading}
+                        className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-white text-sm transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
+                        style={{ background: 'linear-gradient(135deg, #15b84f, #0d8a3a)', boxShadow: '0 8px 24px rgba(18,167,73,0.35)' }}>
+                        {loading ? <><Loader2 className="animate-spin" size={18} /> Gerando PIX...</> : <><CreditCard size={18} /> Pagar com PIX</>}
+                      </button>
                     </div>
                   </div>
-                  <div className="flex gap-3">
-                    <Button type="button" variant="outline" onClick={() => setStep(1)} className="flex-1">Voltar</Button>
-                    <Button type="button" onClick={() => goToStep(3)} className="flex-1">Continuar</Button>
-                  </div>
-                </div>
-              )}
-
-              {step === 3 && (
-                <div className="p-6 rounded-xl bg-card border shadow-sm space-y-4">
-                  <h2 className="font-display text-lg font-bold text-foreground flex items-center gap-2">
-                    <MapPin size={18} /> Endereço de Entrega
-                  </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div>
-                      <label className="text-sm font-medium text-foreground mb-1 block">CEP</label>
-                      <Input
-                        name="cep"
-                        placeholder="00000-000"
-                        value={form.cep}
-                        onChange={handleChange}
-                        maxLength={9}
-                        className={errors.cep ? 'border-destructive' : ''}
-                      />
-                      {fieldError('cep')}
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label className="text-sm font-medium text-foreground mb-1 block">Endereço</label>
-                      <Input name="endereco" placeholder="Rua, Avenida..." value={form.endereco} onChange={handleChange} maxLength={200} />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-foreground mb-1 block">Número</label>
-                      <Input name="numero" placeholder="Nº" value={form.numero} onChange={handleChange} maxLength={10} />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-foreground mb-1 block">Complemento</label>
-                      <Input name="complemento" placeholder="Apto, bloco..." value={form.complemento} onChange={handleChange} maxLength={100} />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-foreground mb-1 block">Bairro</label>
-                      <Input name="bairro" placeholder="Bairro" value={form.bairro} onChange={handleChange} maxLength={100} />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-foreground mb-1 block">Cidade</label>
-                      <Input name="cidade" placeholder="Cidade" value={form.cidade} onChange={handleChange} maxLength={100} />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-foreground mb-1 block">UF</label>
-                      <Input name="estado" placeholder="SP" value={form.estado} onChange={handleChange} maxLength={2} />
-                    </div>
-                  </div>
-                  <div className="flex gap-3">
-                    <Button type="button" variant="outline" onClick={() => setStep(2)} className="flex-1">Voltar</Button>
-                    <Button type="submit" variant="whatsapp" size="lg" className="flex-1" disabled={loading}>
-                      {loading ? <><Loader2 className="mr-2 animate-spin" size={18} /> Gerando PIX...</> : <><CreditCard className="mr-2" size={18} /> Pagar com PIX</>}
-                    </Button>
-                  </div>
-                </div>
-              )}
+                )}
+              </div>
             </form>
 
-            {/* Order summary */}
-            <div className="lg:sticky lg:top-24 h-fit">
-              <div className="p-6 rounded-xl bg-card border shadow-sm space-y-4">
-                <h3 className="font-display text-lg font-bold text-foreground">Resumo do Pedido</h3>
-                <div className="space-y-2 text-sm">
+            {/* ─── Sidebar ─── */}
+            <div className="lg:sticky lg:top-28 h-fit">
+              <div className={`${glassCard} p-6 space-y-5`}>
+                <h3 className="font-display text-base font-bold text-white uppercase tracking-wider">Resumo</h3>
+
+                <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Caçamba</span>
-                    <span className="font-medium text-foreground">{form.tamanho || '—'}</span>
+                    <span className="text-slate-400">Caçamba</span>
+                    <span className="font-semibold text-white">{form.tamanho || '—'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Quantidade</span>
-                    <span className="font-medium text-foreground">{form.quantidade}</span>
+                    <span className="text-slate-400">Quantidade</span>
+                    <span className="font-semibold text-white">{form.quantidade}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-muted-foreground">Valor unitário</span>
-                    <span className="font-medium text-foreground">R$ {selectedPrice.toFixed(2)}</span>
+                    <span className="text-slate-400">Unitário</span>
+                    <span className="text-white">R$ {selectedPrice.toFixed(2)}</span>
                   </div>
-                  <hr className="border-border" />
-                  <div className="flex justify-between text-base">
-                    <span className="font-bold text-foreground">Total</span>
-                    <span className="font-bold text-accent-foreground">R$ {valorTotal.toFixed(2)}</span>
+                  <div className="h-px bg-white/[0.06]" />
+                  <div className="flex justify-between items-baseline">
+                    <span className="font-bold text-white text-base">Total</span>
+                    <span className="font-extrabold font-display text-2xl" style={{ color: '#D4A853' }}>
+                      R$ {valorTotal.toFixed(2)}
+                    </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 p-3 rounded-lg bg-muted text-sm">
-                  <CreditCard size={16} className="text-muted-foreground" />
-                  <span className="text-muted-foreground">Pagamento via <strong>PIX</strong></span>
+
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                  <CreditCard size={15} className="text-slate-500" />
+                  <span className="text-xs text-slate-400">Pagamento via <strong className="text-white">PIX</strong></span>
                 </div>
-                {/* Progress */}
-                <div className="space-y-1.5">
-                  {steps.map(({ n, label }) => (
-                    <div key={n} className="flex items-center gap-2 text-xs">
+
+                {/* Step checklist */}
+                <div className="space-y-2">
+                  {stepsConfig.map(({ n, label }) => (
+                    <div key={n} className="flex items-center gap-2.5 text-xs">
                       {step > n ? (
-                        <CheckCircle2 size={14} className="text-green-500" />
+                        <div className="w-4 h-4 rounded-full bg-[#1FAD4E] flex items-center justify-center">
+                          <Check size={10} className="text-white" strokeWidth={3} />
+                        </div>
                       ) : step === n ? (
-                        <div className="w-3.5 h-3.5 rounded-full border-2 border-primary bg-primary/20" />
+                        <div className="w-4 h-4 rounded-full border-2 border-amber-400/60 bg-amber-400/10" />
                       ) : (
-                        <div className="w-3.5 h-3.5 rounded-full border-2 border-muted-foreground/30" />
+                        <div className="w-4 h-4 rounded-full border border-white/10" />
                       )}
-                      <span className={step >= n ? 'text-foreground' : 'text-muted-foreground'}>{label}</span>
+                      <span className={step >= n ? 'text-slate-300' : 'text-slate-600'}>{label}</span>
                     </div>
                   ))}
                 </div>
@@ -503,6 +500,7 @@ const Checkout = () => {
           </div>
         </div>
       </main>
+
       <SiteFooter />
     </div>
   );
