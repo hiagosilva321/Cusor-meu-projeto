@@ -102,7 +102,7 @@ serve(async (req) => {
         },
       },
       items: [{
-        title: `Cacamba ${tamanho} x${qtd}`,
+        title: `Caçamba ${tamanho} x${qtd}`,
         unitPrice: amount,
         quantity: 1,
         tangible: false,

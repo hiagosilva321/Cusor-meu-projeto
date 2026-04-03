@@ -1,6 +1,7 @@
 import { useEffect, useState, FormEvent } from 'react';
 import { AdminLayout } from '@/components/admin/AdminLayout';
 import { supabase } from '@/integrations/supabase/client';
+import { useSiteSettings } from '@/hooks/use-site-settings';
 import type { Tables } from '@/integrations/supabase/types';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardHeader, CardContent, CardTitle } from '@/components/ui/card';
@@ -35,6 +36,8 @@ interface Region {
 /* ─── Component ─── */
 
 export default function AdminConfiguracoes() {
+  const { refresh: refreshGlobalSettings } = useSiteSettings();
+
   /* ─── Tab: Dados da Empresa ─── */
   const [settings, setSettings] = useState<Tables<'site_settings'> | null>(null);
   const [loadingSettings, setLoadingSettings] = useState(true);
@@ -114,6 +117,7 @@ export default function AdminConfiguracoes() {
     if (error) {
       toast.error('Erro ao salvar configurações');
     } else {
+      await refreshGlobalSettings();
       toast.success('Configurações salvas!');
     }
     setSavingSettings(false);

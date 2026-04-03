@@ -20,7 +20,11 @@ import {
   Eye,
   MessageCircle,
   Loader2,
+  RefreshCw,
+  Undo2,
 } from 'lucide-react';
+import { getTransaction, refundTransaction } from '@/lib/fastsoft-api';
+import { toast } from 'sonner';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -415,82 +419,78 @@ export default function AdminPedidos() {
 
 function OrderDetail({ order }: { order: Order }) {
   const badge = getStatusBadge(order);
+  const [gwStatus, setGwStatus] = useState<string | null>(null);
+  const [gwFee, setGwFee] = useState<number | null>(null);
+  const [gwLoading, setGwLoading] = useState(false);
+  const [refunding, setRefunding] = useState(false);
+
   const fullAddress = [
-    order.endereco,
-    order.numero,
-    order.complemento,
-    order.bairro,
-    order.cidade,
-    order.estado,
-    order.cep,
-  ]
-    .filter(Boolean)
-    .join(', ');
+    order.endereco, order.numero, order.complemento,
+    order.bairro, order.cidade, order.estado, order.cep,
+  ].filter(Boolean).join(', ');
+
+  const handleCheckGateway = async () => {
+    if (!order.fastsoft_transaction_id) { toast.error('Pedido sem ID de transação no gateway'); return; }
+    setGwLoading(true);
+    const tx = await getTransaction(order.fastsoft_transaction_id);
+    if (tx) {
+      setGwStatus(tx.status);
+      setGwFee(tx.amountBaseFee ?? null);
+      toast.success(`Gateway: ${tx.status}`);
+    } else {
+      toast.error('Não foi possível consultar o gateway');
+    }
+    setGwLoading(false);
+  };
+
+  const handleRefund = async () => {
+    if (!order.fastsoft_transaction_id) return;
+    if (!confirm('Tem certeza que deseja estornar este pagamento?')) return;
+    setRefunding(true);
+    const result = await refundTransaction(order.fastsoft_transaction_id);
+    if (result.success) {
+      toast.success('Estorno realizado com sucesso');
+      setGwStatus('REFUNDED');
+    } else {
+      toast.error(result.error || 'Erro ao estornar');
+    }
+    setRefunding(false);
+  };
 
   return (
     <div className="space-y-4 text-sm">
-      {/* Client info */}
       <div className="grid grid-cols-2 gap-x-4 gap-y-2">
         <div className="text-muted-foreground">Nome</div>
         <div className="font-medium">{order.nome}</div>
-
         <div className="text-muted-foreground">WhatsApp</div>
         <div>{order.whatsapp}</div>
-
-        {order.email && (
-          <>
-            <div className="text-muted-foreground">Email</div>
-            <div>{order.email}</div>
-          </>
-        )}
-
-        {order.cpf_cnpj && (
-          <>
-            <div className="text-muted-foreground">CPF/CNPJ</div>
-            <div>{order.cpf_cnpj}</div>
-          </>
-        )}
+        {order.email && <><div className="text-muted-foreground">Email</div><div>{order.email}</div></>}
+        {order.cpf_cnpj && <><div className="text-muted-foreground">CPF/CNPJ</div><div>{order.cpf_cnpj}</div></>}
       </div>
 
       <hr />
-
-      {/* Address */}
-      <div>
-        <span className="font-semibold">Endereço:</span>{' '}
-        {fullAddress || '--'}
-      </div>
-
+      <div><span className="font-semibold">Endereço:</span> {fullAddress || '--'}</div>
       <hr />
 
-      {/* Order details */}
       <div className="grid grid-cols-2 gap-x-4 gap-y-2">
         <div className="text-muted-foreground">Caçamba</div>
-        <div className="font-medium">
-          {order.tamanho} x{order.quantidade}
-        </div>
-
+        <div className="font-medium">{order.tamanho} x{order.quantidade}</div>
         <div className="text-muted-foreground">Valor unitário</div>
         <div>{formatBRL(Number(order.valor_unitario))}</div>
-
         <div className="text-muted-foreground">Valor total</div>
         <div className="font-medium">{formatBRL(Number(order.valor_total))}</div>
-
         <div className="text-muted-foreground">Forma de pagamento</div>
         <div>{order.forma_pagamento}</div>
-
         <div className="text-muted-foreground">Status</div>
-        <div>
-          <Badge className={badge.className}>{badge.label}</Badge>
-        </div>
+        <div><Badge className={badge.className}>{badge.label}</Badge></div>
+        {order.referral_source && (
+          <><div className="text-muted-foreground">Origem</div><div><Badge variant="outline">{order.referral_source}</Badge></div></>
+        )}
       </div>
 
       {order.paid_at && (
-        <div>
-          <span className="text-muted-foreground">Pago em:</span>{' '}
-          {new Date(order.paid_at).toLocaleString('pt-BR')}
-        </div>
+        <div><span className="text-muted-foreground">Pago em:</span> {new Date(order.paid_at).toLocaleString('pt-BR')}</div>
       )}
-
       {order.data_entrega && (
         <div>
           <span className="text-muted-foreground">Entrega:</span>{' '}
@@ -499,17 +499,44 @@ function OrderDetail({ order }: { order: Order }) {
           {HORARIO_LABELS[order.horario_entrega || ''] || order.horario_entrega || ''}
         </div>
       )}
-
       {order.observacoes && (
-        <div>
-          <span className="text-muted-foreground">Observações:</span>{' '}
-          {order.observacoes}
-        </div>
+        <div><span className="text-muted-foreground">Observações:</span> {order.observacoes}</div>
       )}
 
       <div className="text-xs text-muted-foreground pt-2">
         Criado em: {new Date(order.created_at).toLocaleString('pt-BR')}
       </div>
+
+      {/* Gateway */}
+      {order.fastsoft_transaction_id && (
+        <>
+          <hr />
+          <div className="space-y-2">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Gateway</p>
+            <div className="flex flex-wrap gap-2">
+              <Button variant="outline" size="sm" onClick={handleCheckGateway} disabled={gwLoading}>
+                {gwLoading ? <Loader2 size={14} className="animate-spin mr-1.5" /> : <RefreshCw size={14} className="mr-1.5" />}
+                Verificar no Gateway
+              </Button>
+              {order.payment_status === 'paid' && (
+                <Button variant="outline" size="sm" onClick={handleRefund} disabled={refunding} className="text-destructive border-destructive/30 hover:bg-destructive/10">
+                  {refunding ? <Loader2 size={14} className="animate-spin mr-1.5" /> : <Undo2 size={14} className="mr-1.5" />}
+                  Estornar
+                </Button>
+              )}
+            </div>
+            {gwStatus && (
+              <div className="flex items-center gap-3 p-2 rounded-lg bg-muted text-xs">
+                <span className="text-muted-foreground">Status gateway:</span>
+                <Badge variant="outline">{gwStatus}</Badge>
+                {gwFee != null && (
+                  <><span className="text-muted-foreground">Taxa:</span> <span>{formatBRL(gwFee / 100)}</span></>
+                )}
+              </div>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }

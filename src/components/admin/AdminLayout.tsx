@@ -11,6 +11,7 @@ import {
 } from '@/lib/admin-surface';
 import { isCurrentUserAdmin } from '@/lib/admin-auth';
 import { useAdminSurfaceMeta } from '@/hooks/use-admin-surface-meta';
+import { useSiteSettings } from '@/hooks/use-site-settings';
 import {
   LayoutDashboard,
   ShoppingCart,
@@ -34,6 +35,8 @@ export function AdminLayout({ children, title }: { children: ReactNode; title: s
   useAdminSurfaceMeta();
   const navigate = useNavigate();
   const location = useLocation();
+  const { settings } = useSiteSettings();
+  const siteName = settings?.site_name || 'CaçambaJá';
   const [checking, setChecking] = useState(true);
 
   useEffect(() => {
@@ -99,7 +102,7 @@ export function AdminLayout({ children, title }: { children: ReactNode; title: s
         <div className="p-5 flex items-center gap-3">
           <img src={logoIcon} alt="Logo" className="h-8 w-8" />
           <span className="font-display text-lg font-bold text-primary-foreground">
-            Caçamba<span className="text-accent">Já</span>
+            {siteName}
           </span>
         </div>
 
@@ -149,7 +152,7 @@ export function AdminLayout({ children, title }: { children: ReactNode; title: s
           <div className="flex items-center gap-2">
             <img src={logoIcon} alt="Logo" className="h-6 w-6" />
             <span className="font-display text-base font-bold text-primary-foreground">
-              Caçamba<span className="text-accent">Já</span>
+              {siteName}
             </span>
           </div>
           <button onClick={handleLogout} className="text-primary-foreground/70" aria-label="Sair">

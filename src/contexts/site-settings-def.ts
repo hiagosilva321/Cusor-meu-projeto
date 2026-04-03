@@ -6,9 +6,11 @@ type SiteSettings = Tables<'site_settings'>;
 export interface SiteSettingsContextType {
   settings: SiteSettings | null;
   loading: boolean;
+  refresh: () => Promise<void>;
 }
 
 export const SiteSettingsContext = createContext<SiteSettingsContextType>({
   settings: null,
   loading: true,
+  refresh: async () => {},
 });

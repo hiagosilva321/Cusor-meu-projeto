@@ -431,7 +431,6 @@ export default function AdminWhatsApp() {
                               <Copy size={14} className="mr-1.5" /> Copiar
                             </Button>
                           </div>
-                          <p className="text-xs text-muted-foreground">Use este link no WaveSpeed para rastrear vendas deste atendimento.</p>
                         </div>
                       )}
 
