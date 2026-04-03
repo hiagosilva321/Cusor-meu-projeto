@@ -190,7 +190,7 @@ const Checkout = () => {
 
   const fieldError = (name: string) =>
     errors[name] ? (
-      <span role="alert" className="text-xs text-red-400 flex items-center gap-1 mt-1">
+      <span role="alert" className="text-xs text-[#ffb4ab] flex items-center gap-1 mt-1">
         <AlertCircle size={11} /> {errors[name]}
       </span>
     ) : null;
@@ -228,13 +228,13 @@ const Checkout = () => {
                     step > n
                       ? 'bg-[#1FAD4E] text-white shadow-[0_0_16px_rgba(31,173,78,0.4)]'
                       : step === n
-                        ? 'bg-[#f2c36b]/20 text-[#f2c36b] border-2 border-[#f2c36b]/60 shadow-[0_0_16px_rgba(212,168,83,0.3)]'
-                        : 'bg-white/5 text-slate-500 border border-white/10'
+                        ? 'bg-[#f2c36b]/20 text-[#f2c36b] ring-2 ring-[#f2c36b]/60 shadow-[0_0_16px_rgba(242,195,107,0.3)]'
+                        : 'bg-white/[0.08] text-slate-500'
                   }`}>
                     {step > n ? <Check size={16} strokeWidth={3} /> : n}
                   </div>
                   <span className={`text-xs font-semibold uppercase tracking-wider hidden sm:block transition-colors ${
-                    step >= n ? 'text-slate-300' : 'text-slate-600'
+                    step >= n ? 'text-[#d7e3fc]' : 'text-[#d2c5b2]/40'
                   }`}>{label}</span>
                 </button>
                 {n < 3 && (
@@ -263,7 +263,7 @@ const Checkout = () => {
                     {loadingSizes ? (
                       <div className="py-12 text-center">
                         <Loader2 className="animate-spin mx-auto text-[#f2c36b] mb-3" size={28} />
-                        <p className="text-slate-400 text-sm">Carregando tamanhos...</p>
+                        <p className="text-[#d2c5b2] text-sm">Carregando tamanhos...</p>
                       </div>
                     ) : (
                       <>
@@ -276,8 +276,8 @@ const Checkout = () => {
                                 key={s.size} type="button" onClick={() => selectSize(s)}
                                 className={`relative p-4 rounded-xl text-center transition-all duration-300 cursor-pointer group ${
                                   selected
-                                    ? 'bg-[#f2c36b]/10 border-2 border-[#f2c36b]/60 shadow-[0_0_24px_rgba(212,168,83,0.15)]'
-                                    : 'bg-white/[0.03] border border-white/[0.06] hover:border-white/20 hover:bg-white/[0.05]'
+                                    ? 'bg-[#f2c36b]/10 border-2 border-[#f2c36b]/60 shadow-[0_0_24px_rgba(242,195,107,0.15)]'
+                                    : 'bg-white/[0.03] hover:bg-white/[0.07]'
                                 }`}
                               >
                                 {s.size === '5m³' && (
@@ -288,8 +288,8 @@ const Checkout = () => {
                                 <div className={`text-2xl font-extrabold font-display mb-1 transition-colors ${selected ? 'text-[#f2c36b]' : 'text-white'}`}>
                                   {s.size}
                                 </div>
-                                <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">{s.title}</div>
-                                <div className={`text-lg font-bold font-display ${selected ? 'text-amber-300' : 'text-white/80'}`}>
+                                <div className="text-[10px] font-semibold uppercase tracking-wider text-[#d2c5b2] mb-2">{s.title}</div>
+                                <div className={`text-lg font-bold font-display ${selected ? 'text-[#f2c36b]' : 'text-white/80'}`}>
                                   R$ {s.price.toFixed(0)}
                                 </div>
                                 {selected && (
@@ -314,7 +314,7 @@ const Checkout = () => {
                         </div>
 
                         {/* Scheduling */}
-                        <div className="pt-4 border-t border-white/[0.06]">
+                        <div className="pt-5 mt-2 rounded-xl bg-white/[0.02] px-4 pb-1 -mx-1">
                           <h3 className="font-display text-sm font-bold text-white flex items-center gap-2 mb-4">
                             <CalendarDays size={14} className="text-[#f2c36b]" />
                             <span className="uppercase tracking-wider">Agendamento</span>
@@ -340,11 +340,11 @@ const Checkout = () => {
 
                         <Textarea name="observacoes" placeholder="Observações (opcional)" value={form.observacoes}
                           onChange={handleChange} rows={2} maxLength={1000}
-                          className="bg-[#0a1230] border-white/[0.08] text-white placeholder:text-slate-500 focus:ring-amber-400/30 rounded-xl resize-none" />
+                          className="border-0 bg-[#142032] text-[#d7e3fc] placeholder:text-[#d2c5b2]/40 focus:outline-none focus:ring-2 focus:ring-[#f2c36b]/30 rounded-xl resize-none" />
 
                         <button type="button" onClick={() => goToStep(2)} disabled={!sizesReady}
                           className="w-full flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-[#0a1628] text-base transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-40 disabled:cursor-not-allowed"
-                          style={{ background: 'linear-gradient(135deg, #ffe8cb, #D4A853)', boxShadow: '0 8px 24px rgba(212,168,83,0.25)' }}>
+                          style={{ background: 'linear-gradient(135deg, #ffe8cb, #f2c36b)', boxShadow: '0 8px 24px rgba(242,195,107,0.25)' }}>
                           Continuar <ChevronRight size={18} />
                         </button>
                       </>
@@ -362,36 +362,36 @@ const Checkout = () => {
                       <div>
                         <label className={labelCls}>Nome completo *</label>
                         <input name="nome" placeholder="Nome completo" value={form.nome} onChange={handleChange} maxLength={100}
-                          className={`${inputDark} ${errors.nome ? 'border-red-500/50 focus:ring-red-400/30' : ''}`} />
+                          className={`${inputDark} ${errors.nome ? 'border-[#ffb4ab]/50 focus:ring-[#ffb4ab]/30' : ''}`} />
                         {fieldError('nome')}
                       </div>
                       <div>
                         <label className={labelCls}>WhatsApp *</label>
                         <input name="whatsapp" placeholder="(11) 99999-9999" value={form.whatsapp} onChange={handleChange} maxLength={15}
-                          className={`${inputDark} ${errors.whatsapp ? 'border-red-500/50 focus:ring-red-400/30' : ''}`} />
+                          className={`${inputDark} ${errors.whatsapp ? 'border-[#ffb4ab]/50 focus:ring-[#ffb4ab]/30' : ''}`} />
                         {fieldError('whatsapp')}
                       </div>
                       <div>
                         <label className={labelCls}>E-mail</label>
                         <input name="email" placeholder="email@exemplo.com" type="email" value={form.email} onChange={handleChange} maxLength={255}
-                          className={`${inputDark} ${errors.email ? 'border-red-500/50' : ''}`} />
+                          className={`${inputDark} ${errors.email ? 'border-[#ffb4ab]/50' : ''}`} />
                         {fieldError('email')}
                       </div>
                       <div>
                         <label className={labelCls}>CPF ou CNPJ</label>
                         <input name="cpf_cnpj" placeholder="000.000.000-00" value={form.cpf_cnpj} onChange={handleChange} maxLength={18}
-                          className={`${inputDark} ${errors.cpf_cnpj ? 'border-red-500/50' : ''}`} />
+                          className={`${inputDark} ${errors.cpf_cnpj ? 'border-[#ffb4ab]/50' : ''}`} />
                         {fieldError('cpf_cnpj')}
                       </div>
                     </div>
                     <div className="flex gap-3 pt-2">
                       <button type="button" onClick={() => setStep(1)}
-                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border border-white/10 text-slate-300 font-semibold text-sm hover:bg-white/5 transition-colors">
+                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-white/[0.06] text-[#d7e3fc] font-semibold text-sm hover:bg-white/[0.10] transition-colors">
                         <ChevronLeft size={16} /> Voltar
                       </button>
                       <button type="button" onClick={() => goToStep(3)}
                         className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl font-bold text-[#0a1628] text-sm transition-all hover:-translate-y-0.5"
-                        style={{ background: 'linear-gradient(135deg, #ffe8cb, #D4A853)', boxShadow: '0 8px 24px rgba(212,168,83,0.2)' }}>
+                        style={{ background: 'linear-gradient(135deg, #ffe8cb, #f2c36b)', boxShadow: '0 8px 24px rgba(242,195,107,0.2)' }}>
                         Continuar <ChevronRight size={16} />
                       </button>
                     </div>
@@ -408,7 +408,7 @@ const Checkout = () => {
                       <div>
                         <label className={labelCls}>CEP</label>
                         <input name="cep" placeholder="00000-000" value={form.cep} onChange={handleChange} maxLength={9}
-                          className={`${inputDark} ${errors.cep ? 'border-red-500/50' : ''}`} />
+                          className={`${inputDark} ${errors.cep ? 'border-[#ffb4ab]/50' : ''}`} />
                         {fieldError('cep')}
                       </div>
                       <div className="sm:col-span-2">
@@ -438,12 +438,12 @@ const Checkout = () => {
                     </div>
                     <div className="flex gap-3 pt-2">
                       <button type="button" onClick={() => setStep(2)}
-                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl border border-white/10 text-slate-300 font-semibold text-sm hover:bg-white/5 transition-colors">
+                        className="flex-1 flex items-center justify-center gap-2 py-3 rounded-xl bg-white/[0.06] text-[#d7e3fc] font-semibold text-sm hover:bg-white/[0.10] transition-colors">
                         <ChevronLeft size={16} /> Voltar
                       </button>
                       <button type="submit" disabled={loading}
                         className="flex-1 flex items-center justify-center gap-2 py-3.5 rounded-xl font-bold text-white text-sm transition-all hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed"
-                        style={{ background: 'linear-gradient(135deg, #15b84f, #0d8a3a)', boxShadow: '0 8px 24px rgba(18,167,73,0.35)' }}>
+                        style={{ background: 'linear-gradient(135deg, #5ddf79, #1FAD4E)', boxShadow: '0 8px 24px rgba(31,173,78,0.35)' }}>
                         {loading ? <><Loader2 className="animate-spin" size={18} /> Gerando PIX...</> : <><CreditCard size={18} /> Pagar com PIX</>}
                       </button>
                     </div>
@@ -459,15 +459,15 @@ const Checkout = () => {
 
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Caçamba</span>
+                    <span className="text-[#d2c5b2]">Caçamba</span>
                     <span className="font-semibold text-white">{form.tamanho || '—'}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Quantidade</span>
+                    <span className="text-[#d2c5b2]">Quantidade</span>
                     <span className="font-semibold text-white">{form.quantidade}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-400">Unitário</span>
+                    <span className="text-[#d2c5b2]">Unitário</span>
                     <span className="text-white">R$ {selectedPrice.toFixed(2)}</span>
                   </div>
                   <div className="h-px bg-white/[0.06]" />
@@ -479,9 +479,9 @@ const Checkout = () => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06]">
-                  <CreditCard size={15} className="text-slate-500" />
-                  <span className="text-xs text-slate-400">Pagamento via <strong className="text-white">PIX</strong></span>
+                <div className="flex items-center gap-2 p-3 rounded-xl bg-white/[0.05]">
+                  <CreditCard size={15} className="text-[#d2c5b2]/60" />
+                  <span className="text-xs text-[#d2c5b2]">Pagamento via <strong className="text-white">PIX</strong></span>
                 </div>
 
                 {/* Step checklist */}
@@ -495,9 +495,9 @@ const Checkout = () => {
                       ) : step === n ? (
                         <div className="w-4 h-4 rounded-full border-2 border-[#f2c36b]/60 bg-[#f2c36b]/10" />
                       ) : (
-                        <div className="w-4 h-4 rounded-full border border-white/10" />
+                        <div className="w-4 h-4 rounded-full bg-white/[0.08]" />
                       )}
-                      <span className={step >= n ? 'text-slate-300' : 'text-slate-600'}>{label}</span>
+                      <span className={step >= n ? 'text-[#d7e3fc]' : 'text-[#d2c5b2]/40'}>{label}</span>
                     </div>
                   ))}
                 </div>
