@@ -27,10 +27,11 @@ interface DumpsterSize {
 
 /* ─── Styles ─── */
 
-const glassCard = 'rounded-2xl border border-white/[0.06] bg-[#0e1a38]/80 backdrop-blur-xl shadow-[0_8px_32px_rgba(0,0,0,0.3)]';
-const inputDark = 'w-full h-11 rounded-xl bg-[#0a1230] border border-white/[0.08] px-4 text-sm text-white placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-amber-400/30 focus:border-amber-400/30 transition-all duration-200';
+/* Stitch Design System: "The Industrial Architect" — No-Line Rule, Glass & Gradient */
+const glassCard = 'rounded-2xl bg-[rgba(42,53,72,0.6)] backdrop-blur-[12px] shadow-[0_8px_32px_rgba(0,0,0,0.4)]';
+const inputDark = 'w-full h-11 rounded-lg bg-[#142032] px-4 text-sm text-[#d7e3fc] placeholder:text-[#d2c5b2]/40 focus:outline-none focus:ring-2 focus:ring-[#f2c36b]/30 transition-all duration-200';
 const selectDark = `${inputDark} appearance-none cursor-pointer`;
-const labelCls = 'text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1.5 block';
+const labelCls = 'text-xs font-semibold text-[#d2c5b2] uppercase tracking-[0.05em] mb-1.5 block';
 
 /* ─── Component ─── */
 
@@ -201,7 +202,7 @@ const Checkout = () => {
   ];
 
   return (
-    <div className="min-h-screen" style={{ background: '#0a1628' }}>
+    <div className="min-h-screen" style={{ background: '#071325' }}>
       <SiteHeader />
 
       <main className="pt-24 pb-20">
@@ -209,10 +210,10 @@ const Checkout = () => {
 
           {/* ═══ Header ═══ */}
           <div className="text-center mb-10">
-            <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-tight" style={{ color: '#ffe8cb' }}>
+            <h1 className="font-display text-3xl md:text-4xl font-extrabold tracking-[-0.02em]" style={{ color: '#d7e3fc' }}>
               Finalizar Pedido
             </h1>
-            <p className="text-slate-400 mt-2 text-sm">Selecione, preencha e pague com PIX</p>
+            <p className="mt-2 text-sm" style={{ color: '#d2c5b2' }}>Selecione, preencha e pague com PIX</p>
           </div>
 
           {/* ═══ Step Indicator ═══ */}
@@ -227,7 +228,7 @@ const Checkout = () => {
                     step > n
                       ? 'bg-[#1FAD4E] text-white shadow-[0_0_16px_rgba(31,173,78,0.4)]'
                       : step === n
-                        ? 'bg-amber-500/20 text-amber-400 border-2 border-amber-400/60 shadow-[0_0_16px_rgba(212,168,83,0.3)]'
+                        ? 'bg-[#f2c36b]/20 text-[#f2c36b] border-2 border-[#f2c36b]/60 shadow-[0_0_16px_rgba(212,168,83,0.3)]'
                         : 'bg-white/5 text-slate-500 border border-white/10'
                   }`}>
                     {step > n ? <Check size={16} strokeWidth={3} /> : n}
@@ -256,12 +257,12 @@ const Checkout = () => {
                 {step === 1 && (
                   <div className={`${glassCard} p-6 md:p-8 space-y-6`}>
                     <h2 className="font-display text-lg font-bold text-white flex items-center gap-2">
-                      <ShoppingCart size={18} className="text-amber-400" /> Escolha a Caçamba
+                      <ShoppingCart size={18} className="text-[#f2c36b]" /> Escolha a Caçamba
                     </h2>
 
                     {loadingSizes ? (
                       <div className="py-12 text-center">
-                        <Loader2 className="animate-spin mx-auto text-amber-400 mb-3" size={28} />
+                        <Loader2 className="animate-spin mx-auto text-[#f2c36b] mb-3" size={28} />
                         <p className="text-slate-400 text-sm">Carregando tamanhos...</p>
                       </div>
                     ) : (
@@ -275,11 +276,16 @@ const Checkout = () => {
                                 key={s.size} type="button" onClick={() => selectSize(s)}
                                 className={`relative p-4 rounded-xl text-center transition-all duration-300 cursor-pointer group ${
                                   selected
-                                    ? 'bg-amber-500/10 border-2 border-amber-400/60 shadow-[0_0_24px_rgba(212,168,83,0.15)]'
+                                    ? 'bg-[#f2c36b]/10 border-2 border-[#f2c36b]/60 shadow-[0_0_24px_rgba(212,168,83,0.15)]'
                                     : 'bg-white/[0.03] border border-white/[0.06] hover:border-white/20 hover:bg-white/[0.05]'
                                 }`}
                               >
-                                <div className={`text-2xl font-extrabold font-display mb-1 transition-colors ${selected ? 'text-amber-400' : 'text-white'}`}>
+                                {s.size === '5m³' && (
+                                  <div className="absolute -top-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-[#5ddf79] text-[#003913] text-[8px] font-bold uppercase tracking-wider whitespace-nowrap">
+                                    Mais Popular
+                                  </div>
+                                )}
+                                <div className={`text-2xl font-extrabold font-display mb-1 transition-colors ${selected ? 'text-[#f2c36b]' : 'text-white'}`}>
                                   {s.size}
                                 </div>
                                 <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">{s.title}</div>
@@ -287,7 +293,7 @@ const Checkout = () => {
                                   R$ {s.price.toFixed(0)}
                                 </div>
                                 {selected && (
-                                  <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-amber-400 flex items-center justify-center">
+                                  <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-[#f2c36b] flex items-center justify-center">
                                     <Check size={12} className="text-[#0a1628]" strokeWidth={3} />
                                   </div>
                                 )}
@@ -310,7 +316,7 @@ const Checkout = () => {
                         {/* Scheduling */}
                         <div className="pt-4 border-t border-white/[0.06]">
                           <h3 className="font-display text-sm font-bold text-white flex items-center gap-2 mb-4">
-                            <CalendarDays size={14} className="text-amber-400" />
+                            <CalendarDays size={14} className="text-[#f2c36b]" />
                             <span className="uppercase tracking-wider">Agendamento</span>
                           </h3>
                           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -350,7 +356,7 @@ const Checkout = () => {
                 {step === 2 && (
                   <div className={`${glassCard} p-6 md:p-8 space-y-5`}>
                     <h2 className="font-display text-lg font-bold text-white flex items-center gap-2">
-                      <User size={18} className="text-amber-400" /> Seus Dados
+                      <User size={18} className="text-[#f2c36b]" /> Seus Dados
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
@@ -396,7 +402,7 @@ const Checkout = () => {
                 {step === 3 && (
                   <div className={`${glassCard} p-6 md:p-8 space-y-5`}>
                     <h2 className="font-display text-lg font-bold text-white flex items-center gap-2">
-                      <MapPin size={18} className="text-amber-400" /> Endereço de Entrega
+                      <MapPin size={18} className="text-[#f2c36b]" /> Endereço de Entrega
                     </h2>
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                       <div>
@@ -467,7 +473,7 @@ const Checkout = () => {
                   <div className="h-px bg-white/[0.06]" />
                   <div className="flex justify-between items-baseline">
                     <span className="font-bold text-white text-base">Total</span>
-                    <span className="font-extrabold font-display text-2xl" style={{ color: '#D4A853' }}>
+                    <span className="font-extrabold font-display text-2xl" style={{ color: '#f2c36b' }}>
                       R$ {valorTotal.toFixed(2)}
                     </span>
                   </div>
@@ -487,7 +493,7 @@ const Checkout = () => {
                           <Check size={10} className="text-white" strokeWidth={3} />
                         </div>
                       ) : step === n ? (
-                        <div className="w-4 h-4 rounded-full border-2 border-amber-400/60 bg-amber-400/10" />
+                        <div className="w-4 h-4 rounded-full border-2 border-[#f2c36b]/60 bg-[#f2c36b]/10" />
                       ) : (
                         <div className="w-4 h-4 rounded-full border border-white/10" />
                       )}
@@ -501,6 +507,13 @@ const Checkout = () => {
         </div>
       </main>
 
+      {/* Security badge */}
+      <div className="text-center pb-6" style={{ background: '#071325' }}>
+        <div className="flex items-center justify-center gap-2 text-[#d2c5b2]/50 text-xs">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          100% Seguro & Criptografado
+        </div>
+      </div>
       <SiteFooter />
     </div>
   );
