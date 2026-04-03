@@ -2,8 +2,6 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { apiPost, type PublicOrderStatusRequest, type PublicOrderStatusResponse } from '@/lib/api';
 import { getOrderAccessToken } from '@/lib/order-access';
-import { SiteHeader } from '@/components/landing/SiteHeader';
-import { SiteFooter } from '@/components/landing/SiteFooter';
 import { CheckCircle, Copy, Clock, Loader2, QrCode, MessageCircle, Shield } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
@@ -100,11 +98,9 @@ const Payment = () => {
   const isExpired = timeLeft === 'Expirado';
 
   return (
-    <div className="min-h-screen" style={{ background: '#071325' }}>
-      <SiteHeader />
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8" style={{ background: '#071325' }}>
 
-      <main className="pt-24 pb-16">
-        <div className="container max-w-md mx-auto px-4">
+        <div className="w-full max-w-md">
 
           {/* Timer */}
           <div className="flex justify-center mb-6">
@@ -237,9 +233,6 @@ const Payment = () => {
           </div>
 
         </div>
-      </main>
-
-      <SiteFooter />
     </div>
   );
 };
