@@ -4,21 +4,23 @@ import { useNavigate } from 'react-router-dom';
 import { Turnstile } from '@marsidev/react-turnstile';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { isCurrentUserAdmin } from '@/lib/admin-auth';
+import { ADMIN_DASHBOARD_PATH } from '@/lib/admin-surface';
+import { useAdminSurfaceMeta } from '@/hooks/use-admin-surface-meta';
 import { Lock, User, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase, isSupabaseClientConfigured } from '@/integrations/supabase/client';
 import { mapSupabaseAuthError } from '@/lib/auth-errors';
 import logoIcon from '@/assets/logo-icon.png';
 
-const DEFAULT_ADMIN_EMAIL = 'admin@cacambja.com';
-
 function turnstileSiteKey(): string {
   return (import.meta.env.VITE_TURNSTILE_SITE_KEY as string | undefined)?.trim() || '';
 }
 
 export default function AdminLogin() {
+  useAdminSurfaceMeta();
   const navigate = useNavigate();
-  const [email, setEmail] = useState(DEFAULT_ADMIN_EMAIL);
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [captchaToken, setCaptchaToken] = useState<string | null>(null);
@@ -31,8 +33,16 @@ export default function AdminLogin() {
   }, []);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) navigate('/admin/dashboard', { replace: true });
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!session) return;
+
+      const isAdmin = await isCurrentUserAdmin();
+      if (isAdmin) {
+        navigate(ADMIN_DASHBOARD_PATH, { replace: true });
+        return;
+      }
+
+      await supabase.auth.signOut();
     });
   }, [navigate]);
 
@@ -67,8 +77,16 @@ export default function AdminLogin() {
         toast.error('Sessão não gravou. Atualize a página e tente de novo.');
         return;
       }
+
+      const isAdmin = await isCurrentUserAdmin();
+      if (!isAdmin) {
+        await supabase.auth.signOut();
+        toast.error('Usuário sem permissão de administrador.');
+        return;
+      }
+
       toast.success('Entrou no painel.');
-      navigate('/admin/dashboard', { replace: true });
+      navigate(ADMIN_DASHBOARD_PATH, { replace: true });
     } catch (err: unknown) {
       const ex = err as { message?: string; status?: number };
       toast.error(mapSupabaseAuthError(ex.message || '', ex.status), { duration: 12000 });

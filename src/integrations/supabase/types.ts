@@ -14,6 +14,24 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_users: {
+        Row: {
+          auth_user_id: string
+          created_at: string
+          email: string | null
+        }
+        Insert: {
+          auth_user_id: string
+          created_at?: string
+          email?: string | null
+        }
+        Update: {
+          auth_user_id?: string
+          created_at?: string
+          email?: string | null
+        }
+        Relationships: []
+      }
       dumpster_sizes: {
         Row: {
           active: boolean
@@ -477,6 +495,10 @@ export type Database = {
           total_clicks: number
           unique_visitors: number
         }[]
+      }
+      is_admin_user: {
+        Args: never
+        Returns: boolean
       }
     }
     Enums: {

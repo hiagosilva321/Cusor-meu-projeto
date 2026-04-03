@@ -2,6 +2,16 @@ import { ReactNode, useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import {
+  ADMIN_CATALOGO_PATH,
+  ADMIN_CONFIGURACOES_PATH,
+  ADMIN_DASHBOARD_PATH,
+  ADMIN_LOGIN_PATH,
+  ADMIN_PEDIDOS_PATH,
+  ADMIN_WHATSAPP_PATH,
+} from '@/lib/admin-surface';
+import { isCurrentUserAdmin } from '@/lib/admin-auth';
+import { useAdminSurfaceMeta } from '@/hooks/use-admin-surface-meta';
+import {
   LayoutDashboard,
   ShoppingCart,
   Package,
@@ -13,14 +23,15 @@ import {
 import logoIcon from '@/assets/logo-icon.png';
 
 const menuItems = [
-  { label: 'Dashboard', icon: LayoutDashboard, path: '/admin/dashboard' },
-  { label: 'Pedidos', icon: ShoppingCart, path: '/admin/pedidos' },
-  { label: 'Catálogo', icon: Package, path: '/admin/catalogo' },
-  { label: 'WhatsApp', icon: MessageCircle, path: '/admin/whatsapp' },
-  { label: 'Configurações', icon: Settings, path: '/admin/configuracoes' },
+  { label: 'Dashboard', icon: LayoutDashboard, path: ADMIN_DASHBOARD_PATH },
+  { label: 'Pedidos', icon: ShoppingCart, path: ADMIN_PEDIDOS_PATH },
+  { label: 'Catálogo', icon: Package, path: ADMIN_CATALOGO_PATH },
+  { label: 'WhatsApp', icon: MessageCircle, path: ADMIN_WHATSAPP_PATH },
+  { label: 'Configurações', icon: Settings, path: ADMIN_CONFIGURACOES_PATH },
 ];
 
 export function AdminLayout({ children, title }: { children: ReactNode; title: string }) {
+  useAdminSurfaceMeta();
   const navigate = useNavigate();
   const location = useLocation();
   const [checking, setChecking] = useState(true);
@@ -40,13 +51,26 @@ export function AdminLayout({ children, title }: { children: ReactNode; title: s
     (async () => {
       const ok = await resolveSession();
       if (cancelled) return;
-      if (!ok) navigate('/admin', { replace: true });
+      if (!ok) {
+        navigate(ADMIN_LOGIN_PATH, { replace: true });
+        return;
+      }
+
+      const isAdmin = await isCurrentUserAdmin();
+      if (cancelled) return;
+
+      if (!isAdmin) {
+        await supabase.auth.signOut();
+        navigate('/', { replace: true });
+        return;
+      }
+
       setChecking(false);
     })();
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (cancelled) return;
-      if (event === 'SIGNED_OUT') navigate('/admin', { replace: true });
+      if (event === 'SIGNED_OUT') navigate(ADMIN_LOGIN_PATH, { replace: true });
     });
 
     return () => {
@@ -57,7 +81,7 @@ export function AdminLayout({ children, title }: { children: ReactNode; title: s
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
-    navigate('/admin');
+    navigate(ADMIN_LOGIN_PATH);
   };
 
   if (checking) {

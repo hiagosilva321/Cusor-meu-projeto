@@ -5,6 +5,14 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { WhatsAppProvider } from "@/contexts/WhatsAppContext";
 import { SiteSettingsProvider } from "@/contexts/SiteSettingsContext";
+import {
+  ADMIN_CATALOGO_PATH,
+  ADMIN_CONFIGURACOES_PATH,
+  ADMIN_DASHBOARD_PATH,
+  ADMIN_LOGIN_PATH,
+  ADMIN_PEDIDOS_PATH,
+  ADMIN_WHATSAPP_PATH,
+} from "@/lib/admin-surface";
 import Index from "./pages/Index.tsx";
 import AdminLogin from "./pages/admin/AdminLogin.tsx";
 
@@ -43,12 +51,12 @@ const App = () => (
               <Route path="/checkout" element={<Checkout />} />
               <Route path="/pagamento/:orderId" element={<Payment />} />
               <Route path="/pagamento-confirmado/:orderId" element={<PaymentConfirmed />} />
-              <Route path="/admin" element={<AdminLogin />} />
-              <Route path="/admin/dashboard" element={<AdminDashboard />} />
-              <Route path="/admin/pedidos" element={<AdminPedidos />} />
-              <Route path="/admin/catalogo" element={<AdminCatalogo />} />
-              <Route path="/admin/whatsapp" element={<AdminWhatsApp />} />
-              <Route path="/admin/configuracoes" element={<AdminConfiguracoes />} />
+              <Route path={ADMIN_LOGIN_PATH} element={<AdminLogin />} />
+              <Route path={ADMIN_DASHBOARD_PATH} element={<AdminDashboard />} />
+              <Route path={ADMIN_PEDIDOS_PATH} element={<AdminPedidos />} />
+              <Route path={ADMIN_CATALOGO_PATH} element={<AdminCatalogo />} />
+              <Route path={ADMIN_WHATSAPP_PATH} element={<AdminWhatsApp />} />
+              <Route path={ADMIN_CONFIGURACOES_PATH} element={<AdminConfiguracoes />} />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>

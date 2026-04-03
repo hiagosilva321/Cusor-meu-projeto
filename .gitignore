@@ -52,3 +52,6 @@ supabase/.temp/
 
 # Lock files binários
 bun.lockb
+
+# Stitch previews / design mockups
+stitch-preview/

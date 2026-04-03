@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { goToCheckoutStep2 } from './helpers/checkout';
+import { ADMIN_LOGIN_PATH, ADMIN_PEDIDOS_PATH } from './helpers/admin';
 
 test.describe('Seguranca e sanitizacao', () => {
   test('nao expoe SUPABASE_SERVICE_ROLE_KEY no HTML', async ({ page }) => {
@@ -68,12 +69,12 @@ test.describe('Seguranca e sanitizacao', () => {
   });
 
   test('rotas admin nao vazam dados sem autenticacao', async ({ page }) => {
-    await page.goto('/admin/pedidos');
+    await page.goto(ADMIN_PEDIDOS_PATH);
     await page.waitForTimeout(3000);
     // Sem sessao, nao deve exibir dados de pedidos
     const body = await page.textContent('body');
     // Deve ter redirecionado ou mostrar login
     const url = page.url();
-    expect(url).toMatch(/\/admin$/);
+    expect(url).toContain(ADMIN_LOGIN_PATH);
   });
 });
