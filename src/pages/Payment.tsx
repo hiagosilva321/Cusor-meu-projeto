@@ -5,6 +5,7 @@ import { getOrderAccessToken } from '@/lib/order-access';
 import { SiteHeader } from '@/components/landing/SiteHeader';
 import { SiteFooter } from '@/components/landing/SiteFooter';
 import { CheckCircle, Copy, Clock, Loader2, QrCode, MessageCircle, Shield } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { toast } from 'sonner';
 import { useWhatsApp } from '@/contexts/WhatsAppContext';
 
@@ -72,15 +73,18 @@ const Payment = () => {
   }, [order?.pix_expires_at]);
 
   const handleCopy = async () => {
-    const code = order?.pix_qr_code || order?.pix_copy_paste;
-    if (!code) return;
+    if (!pixCode) return;
     try {
-      await navigator.clipboard.writeText(code);
+      await navigator.clipboard.writeText(pixCode);
       setCopied(true);
       toast.success('Código PIX copiado!');
       setTimeout(() => setCopied(false), 3000);
     } catch { toast.error('Erro ao copiar. Copie manualmente.'); }
   };
+
+  // O gateway retorna o código EMV no campo pix_qr_code (não imagem)
+  // pix_copy_paste pode ser null — usar pix_qr_code como fallback
+  const pixCode = order?.pix_copy_paste || order?.pix_qr_code || '';
 
   if (loading) {
     return (
@@ -130,13 +134,14 @@ const Payment = () => {
             {/* QR Code */}
             <div className="flex justify-center px-6 pb-5">
               <div className="p-4 rounded-2xl bg-white">
-                {order?.pix_qr_code ? (
-                  <img
-                    src={order.pix_qr_code.startsWith('data:') ? order.pix_qr_code : order.pix_qr_code.startsWith('00020') ? undefined : `data:image/png;base64,${order.pix_qr_code}`}
-                    alt="QR Code PIX"
+                {pixCode ? (
+                  <QRCodeSVG
+                    value={pixCode}
+                    size={240}
+                    level="M"
+                    bgColor="#ffffff"
+                    fgColor="#071325"
                     className="w-52 h-52 sm:w-60 sm:h-60"
-                    style={{ imageRendering: 'pixelated' }}
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                   />
                 ) : (
                   <div className="w-52 h-52 sm:w-60 sm:h-60 flex items-center justify-center">
@@ -152,7 +157,7 @@ const Payment = () => {
                 Código PIX Copia e Cola
               </p>
               <div className="p-3 rounded-xl bg-[#142032] text-xs font-mono break-all max-h-16 overflow-y-auto" style={{ color: '#d7e3fc' }}>
-                {order?.pix_copy_paste || order?.pix_qr_code || 'Código não disponível'}
+                {pixCode || 'Código não disponível'}
               </div>
               <button
                 onClick={handleCopy}
