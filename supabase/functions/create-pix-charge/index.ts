@@ -1,6 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -36,28 +35,15 @@ serve(async (req) => {
     const valor_total = valor_unitario * qtd;
     const amount = Math.round(valor_total * 100); // centavos
 
-    let FASTSOFT_SECRET_KEY = Deno.env.get('FASTSOFT_SECRET_KEY');
+    const FASTSOFT_SECRET_KEY = Deno.env.get('FASTSOFT_SECRET_KEY');
     const FASTSOFT_API_URL = Deno.env.get('FASTSOFT_API_URL') || 'https://api.fastsoftbrasil.com';
-
-    // Fallback: buscar secret do vault do Supabase se não estiver em env
     if (!FASTSOFT_SECRET_KEY) {
-      try {
-        const vaultClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
-        const { data: vaultData } = await vaultClient.rpc('vault_read_secret', { secret_name: 'FASTSOFT_SECRET_KEY' });
-        if (vaultData) FASTSOFT_SECRET_KEY = vaultData;
-      } catch (e) {
-        console.error('[CREATE-PIX] Vault fallback error:', e);
-      }
-    }
-
-    if (!FASTSOFT_SECRET_KEY) {
-      console.error('[CREATE-PIX] FASTSOFT_SECRET_KEY ausente (env + vault)');
+      console.error('[CREATE-PIX] FASTSOFT_SECRET_KEY ausente nos secrets');
       return new Response(JSON.stringify({ error: 'Gateway de pagamento indisponivel.' }), { status: 503, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     // FastSoft Basic Auth: base64("x:<secret_key>")
-    const authString = `x:${FASTSOFT_SECRET_KEY}`;
-    const tokenBase64 = base64Encode(new TextEncoder().encode(authString));
+    const tokenBase64 = btoa(`x:${FASTSOFT_SECRET_KEY}`);
 
     const orderRef = crypto.randomUUID().slice(0, 8);
 
@@ -88,19 +74,21 @@ serve(async (req) => {
         phone: whatsapp.replace(/\D/g, ''),
         externaRef: `cli_${orderRef}`,
       },
-      shipping: {
-        fee: 0,
-        address: {
-          street: endereco || '',
-          streetNumber: numero || '',
-          complement: complemento || '',
-          zipCode: (cep || '').replace(/\D/g, ''),
-          neighborhood: bairro || '',
-          city: cidade || '',
-          state: estado || '',
-          country: 'br',
+      ...(estado ? {
+        shipping: {
+          fee: 0,
+          address: {
+            street: endereco || 'N/A',
+            streetNumber: numero || 'S/N',
+            complement: complemento || '',
+            zipCode: (cep || '').replace(/\D/g, '') || '00000000',
+            neighborhood: bairro || 'N/A',
+            city: cidade || 'N/A',
+            state: estado,
+            country: 'br',
+          },
         },
-      },
+      } : {}),
       items: [{
         title: `Caçamba ${tamanho} x${qtd}`,
         unitPrice: amount,
@@ -109,10 +97,10 @@ serve(async (req) => {
         externalRef: `ped_${orderRef}`,
       }],
       postbackUrl: WEBHOOK_URL,
-      metadata: {
+      metadata: JSON.stringify({
         order_ref: orderRef,
         referral_source: referral_source || null,
-      },
+      }),
       traceable: true,
       ip: clientIp,
       pix: {
@@ -130,11 +118,18 @@ serve(async (req) => {
       body: JSON.stringify(payload),
     });
 
-    const data = await response.json();
+    const rawText = await response.text();
+    console.log('[CREATE-PIX] FastSoft response status:', response.status, 'body:', rawText.slice(0, 500));
+
+    let data;
+    try { data = JSON.parse(rawText); } catch {
+      console.error('[CREATE-PIX] Failed to parse FastSoft response');
+      return new Response(JSON.stringify({ error: 'Resposta inválida do gateway.' }), { status: 502, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
 
     if (!response.ok) {
-      console.error('FastSoft error:', JSON.stringify(data));
-      return new Response(JSON.stringify({ error: 'Erro interno ao processar pagamento.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      console.error('[CREATE-PIX] FastSoft error:', rawText.slice(0, 500));
+      return new Response(JSON.stringify({ error: data?.message || 'Erro no gateway de pagamento.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     const txData = data.data;
@@ -197,7 +192,8 @@ serve(async (req) => {
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
   } catch (error) {
-    console.error('[CREATE-PIX] Erro:', error);
-    return new Response(JSON.stringify({ error: 'Erro interno ao processar pagamento.' }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    const msg = error instanceof Error ? error.message : String(error);
+    console.error('[CREATE-PIX] Erro:', msg, error);
+    return new Response(JSON.stringify({ error: 'Erro interno ao processar pagamento.', detail: msg }), { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
   }
 });
