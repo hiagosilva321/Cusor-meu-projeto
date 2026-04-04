@@ -535,7 +535,7 @@ const Checkout = () => {
                         <div>
                           <label className={labelCls}>Data desejada</label>
                           <input type="date" name="data_entrega" value={form.data_entrega} onChange={handleChange}
-                            min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
+                            min={new Date().toISOString().split('T')[0]}
                             max={new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0]}
                             className={inputCls()} />
                         </div>

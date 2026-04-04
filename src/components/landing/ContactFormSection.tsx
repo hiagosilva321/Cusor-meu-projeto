@@ -201,7 +201,7 @@ export function ContactFormSection() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <input
                   type="date" name="data_entrega" value={form.data_entrega} onChange={handleChange}
-                  min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
+                  min={new Date().toISOString().split('T')[0]}
                   max={new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0]}
                   className={inputCls}
                 />
