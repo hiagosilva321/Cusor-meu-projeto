@@ -445,6 +445,13 @@ interface SizeOption { size: string; title: string; price: number; }
 function NewOrderForm({ onCreated }: { onCreated: () => void }) {
   const [sizes, setSizes] = useState<SizeOption[]>([]);
   const [loading, setLoading] = useState(false);
+  const [helperPrice, setHelperPrice] = useState(125);
+  const [ajudantes, setAjudantes] = useState(0);
+  const [couponInput, setCouponInput] = useState('');
+  const [appliedCoupon, setAppliedCoupon] = useState('');
+  const [appliedDiscount, setAppliedDiscount] = useState(0);
+  const [couponError, setCouponError] = useState('');
+  const [couponLoading, setCouponLoading] = useState(false);
   const [result, setResult] = useState<{ orderId: string; token: string; pixCode: string | null; pixQr: string | null; expires: string } | null>(null);
   const [form, setForm] = useState({
     nome: '', whatsapp: '', email: '', cpf_cnpj: '',
@@ -452,20 +459,52 @@ function NewOrderForm({ onCreated }: { onCreated: () => void }) {
     bairro: '', cidade: '', estado: '',
     tamanho: '', quantidade: '1', observacoes: '',
     referral_source: '',
+    data_entrega: '', horario_entrega: 'manha',
   });
 
   useEffect(() => {
-    supabase.from('dumpster_sizes').select('size, title, price').eq('active', true).order('order_index')
-      .then(({ data }) => {
-        if (data?.length) {
-          setSizes(data);
-          setForm(f => ({ ...f, tamanho: data[0].size }));
-        }
-      });
+    Promise.all([
+      supabase.from('dumpster_sizes').select('size, title, price').eq('active', true).order('order_index'),
+      supabase.from('site_settings').select('helper_price').limit(1).single(),
+    ]).then(([sizesRes, settingsRes]) => {
+      if (settingsRes.data?.helper_price) setHelperPrice(Number(settingsRes.data.helper_price));
+      if (sizesRes.data?.length) {
+        setSizes(sizesRes.data);
+        setForm(f => ({ ...f, tamanho: sizesRes.data[0].size }));
+      }
+    });
   }, []);
 
   const selectedPrice = sizes.find(s => s.size === form.tamanho)?.price || 0;
-  const valorTotal = selectedPrice * parseInt(form.quantidade || '1');
+  const valorCacamba = selectedPrice * parseInt(form.quantidade || '1');
+  const valorAjudantes = ajudantes * helperPrice;
+  const subtotal = valorCacamba + valorAjudantes;
+  const valorDesconto = Math.round(subtotal * (appliedDiscount / 100) * 100) / 100;
+  const valorTotal = subtotal - valorDesconto;
+
+  const handleApplyCoupon = async () => {
+    const code = couponInput.trim().toUpperCase();
+    if (!code) { setCouponError('Digite um código.'); return; }
+    setCouponLoading(true);
+    setCouponError('');
+    try {
+      const { data, error } = await supabase.rpc('validate_coupon', { p_code: code });
+      if (error || !data || data.length === 0) {
+        setCouponError('Cupom inválido ou expirado.');
+        setAppliedCoupon(''); setAppliedDiscount(0);
+      } else {
+        setAppliedCoupon(code);
+        setAppliedDiscount(data[0].discount_percent);
+        setCouponError('');
+        toast.success(`Cupom ${code} aplicado: ${data[0].discount_percent}% off`);
+      }
+    } catch { setCouponError('Erro ao validar.'); }
+    finally { setCouponLoading(false); }
+  };
+
+  const removeCoupon = () => {
+    setAppliedCoupon(''); setAppliedDiscount(0); setCouponInput(''); setCouponError('');
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -507,9 +546,14 @@ function NewOrderForm({ onCreated }: { onCreated: () => void }) {
         quantidade: parseInt(form.quantidade),
         valor_unitario: selectedPrice,
         observacoes: form.observacoes.trim() || null,
-        data_entrega: null,
-        horario_entrega: null,
+        data_entrega: form.data_entrega || null,
+        horario_entrega: form.horario_entrega || null,
         referral_source: form.referral_source.trim() || null,
+        ajudantes,
+        valor_ajudantes: valorAjudantes,
+        coupon_code: appliedCoupon || null,
+        discount_percent: appliedDiscount || undefined,
+        valor_desconto: valorDesconto || undefined,
       };
 
       const data = await apiPost<CreatePixChargeResponse, CreatePixChargeRequest>('create-pix-charge', body);
@@ -602,7 +646,7 @@ function NewOrderForm({ onCreated }: { onCreated: () => void }) {
               </p>
             </div>
 
-            <Button variant="outline" className="w-full" onClick={() => { setResult(null); setForm(f => ({ ...f, nome: '', whatsapp: '', email: '', cpf_cnpj: '', cep: '', endereco: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '', observacoes: '', referral_source: '' })); }}>
+            <Button variant="outline" className="w-full" onClick={() => { setResult(null); setAjudantes(0); setAppliedCoupon(''); setAppliedDiscount(0); setCouponInput(''); setForm(f => ({ ...f, nome: '', whatsapp: '', email: '', cpf_cnpj: '', cep: '', endereco: '', numero: '', complemento: '', bairro: '', cidade: '', estado: '', observacoes: '', referral_source: '', data_entrega: '', horario_entrega: 'manha' })); }}>
               Gerar novo pedido
             </Button>
           </CardContent>
@@ -680,16 +724,92 @@ function NewOrderForm({ onCreated }: { onCreated: () => void }) {
                   </select>
                 </div>
                 <div className="space-y-1.5">
+                  <Label>Ajudantes (R$ {helperPrice}/un)</Label>
+                  <select value={ajudantes} onChange={e => setAjudantes(Number(e.target.value))} className={selectClasses}>
+                    <option value={0}>Sem ajudante</option>
+                    {[1, 2, 3, 4].map(n => <option key={n} value={n}>{n} ajudante{n > 1 ? 's' : ''}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4">
+                <div className="space-y-1.5">
+                  <Label>Data entrega</Label>
+                  <Input type="date" name="data_entrega" value={form.data_entrega} onChange={handleChange}
+                    min={new Date(Date.now() + 86400000).toISOString().split('T')[0]}
+                    max={new Date(Date.now() + 30 * 86400000).toISOString().split('T')[0]} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Horário</Label>
+                  <select name="horario_entrega" value={form.horario_entrega} onChange={handleChange} className={selectClasses}>
+                    <option value="manha">Manhã (7h-12h)</option>
+                    <option value="tarde">Tarde (12h-18h)</option>
+                    <option value="dia_todo">Dia todo (7h-18h)</option>
+                  </select>
+                </div>
+                <div className="space-y-1.5">
                   <Label>Origem (ref)</Label>
                   <Input name="referral_source" placeholder="joao, maria..." value={form.referral_source} onChange={handleChange} />
                 </div>
               </div>
+
+              {/* Cupom */}
+              <div className="mt-4 p-3 rounded-lg bg-muted/50 space-y-2">
+                <Label className="text-xs font-semibold uppercase tracking-wider">Cupom de desconto</Label>
+                {appliedCoupon ? (
+                  <div className="flex items-center gap-2">
+                    <Badge className="bg-green-100 text-green-800 border-green-200 gap-1">
+                      <CheckCircle size={12} /> {appliedCoupon} ({appliedDiscount}%)
+                    </Badge>
+                    <Button variant="ghost" size="sm" onClick={removeCoupon} className="h-7 text-xs text-destructive">Remover</Button>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Ex: PRIMEIRA10"
+                      value={couponInput}
+                      onChange={e => { setCouponInput(e.target.value.toUpperCase()); setCouponError(''); }}
+                      onKeyDown={e => e.key === 'Enter' && (e.preventDefault(), handleApplyCoupon())}
+                      maxLength={30}
+                      className="h-9"
+                    />
+                    <Button variant="outline" size="sm" onClick={handleApplyCoupon} disabled={couponLoading} className="h-9 shrink-0">
+                      {couponLoading ? <Loader2 size={14} className="animate-spin" /> : 'Aplicar'}
+                    </Button>
+                  </div>
+                )}
+                {couponError && <p className="text-xs text-destructive">{couponError}</p>}
+              </div>
+
               <Textarea name="observacoes" placeholder="Observações (opcional)" value={form.observacoes} onChange={handleChange} rows={2} className="mt-4" />
             </div>
 
-            <div className="flex items-center justify-between p-4 rounded-xl bg-muted">
-              <span className="text-sm text-muted-foreground">Total:</span>
-              <span className="text-2xl font-bold text-foreground">{formatBRL(valorTotal)}</span>
+            <div className="p-4 rounded-xl bg-muted space-y-1.5">
+              {(ajudantes > 0 || appliedDiscount > 0) && (
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between text-muted-foreground">
+                    <span>Caçamba ({form.tamanho} x{form.quantidade})</span>
+                    <span>{formatBRL(valorCacamba)}</span>
+                  </div>
+                  {ajudantes > 0 && (
+                    <div className="flex justify-between text-muted-foreground">
+                      <span>Ajudantes ({ajudantes}x)</span>
+                      <span>{formatBRL(valorAjudantes)}</span>
+                    </div>
+                  )}
+                  {appliedDiscount > 0 && (
+                    <div className="flex justify-between text-green-600">
+                      <span>Desconto ({appliedDiscount}%)</span>
+                      <span>-{formatBRL(valorDesconto)}</span>
+                    </div>
+                  )}
+                  <hr className="my-1.5" />
+                </div>
+              )}
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-muted-foreground">Total:</span>
+                <span className="text-2xl font-bold text-foreground">{formatBRL(valorTotal)}</span>
+              </div>
             </div>
 
             <Button type="submit" size="lg" className="w-full gap-2" disabled={loading}>

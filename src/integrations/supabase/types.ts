@@ -414,6 +414,31 @@ export type Database = {
           updated_at: string
           whatsapp_principal: string | null
           whatsapp_rotation_size: number
+          hero_badge: string
+          hero_title: string
+          hero_subtitle: string
+          hero_cta_primary: string
+          hero_cta_secondary: string
+          hero_trust_marks: Json
+          benefits_title: string
+          benefits_items: Json
+          howit_title: string
+          howit_steps: Json
+          discard_title: string
+          discard_subtitle: string
+          discard_items: Json
+          cta_title: string
+          cta_subtitle: string
+          contact_badge: string
+          contact_title: string
+          contact_subtitle: string
+          business_hours_weekday: string
+          business_hours_saturday: string
+          business_hours_emergency: string
+          sizes_title: string
+          sizes_subtitle: string
+          regions_title: string
+          regions_subtitle: string
         }
         Insert: {
           created_at?: string
@@ -427,6 +452,31 @@ export type Database = {
           updated_at?: string
           whatsapp_principal?: string | null
           whatsapp_rotation_size?: number
+          hero_badge?: string
+          hero_title?: string
+          hero_subtitle?: string
+          hero_cta_primary?: string
+          hero_cta_secondary?: string
+          hero_trust_marks?: Json
+          benefits_title?: string
+          benefits_items?: Json
+          howit_title?: string
+          howit_steps?: Json
+          discard_title?: string
+          discard_subtitle?: string
+          discard_items?: Json
+          cta_title?: string
+          cta_subtitle?: string
+          contact_badge?: string
+          contact_title?: string
+          contact_subtitle?: string
+          business_hours_weekday?: string
+          business_hours_saturday?: string
+          business_hours_emergency?: string
+          sizes_title?: string
+          sizes_subtitle?: string
+          regions_title?: string
+          regions_subtitle?: string
         }
         Update: {
           created_at?: string
@@ -440,6 +490,31 @@ export type Database = {
           updated_at?: string
           whatsapp_principal?: string | null
           whatsapp_rotation_size?: number
+          hero_badge?: string
+          hero_title?: string
+          hero_subtitle?: string
+          hero_cta_primary?: string
+          hero_cta_secondary?: string
+          hero_trust_marks?: Json
+          benefits_title?: string
+          benefits_items?: Json
+          howit_title?: string
+          howit_steps?: Json
+          discard_title?: string
+          discard_subtitle?: string
+          discard_items?: Json
+          cta_title?: string
+          cta_subtitle?: string
+          contact_badge?: string
+          contact_title?: string
+          contact_subtitle?: string
+          business_hours_weekday?: string
+          business_hours_saturday?: string
+          business_hours_emergency?: string
+          sizes_title?: string
+          sizes_subtitle?: string
+          regions_title?: string
+          regions_subtitle?: string
         }
         Relationships: []
       }

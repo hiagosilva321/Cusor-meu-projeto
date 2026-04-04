@@ -1,14 +1,17 @@
 import { Truck, Clock, ShieldCheck, Leaf, Headphones, DollarSign } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useSiteSettings } from '@/hooks/use-site-settings';
 
-const benefits = [
-  { icon: Clock, title: 'Mesmo dia', desc: 'Sua obra não para.' },
-  { icon: DollarSign, title: 'Preço fechado', desc: 'Zero taxa extra.' },
-  { icon: Headphones, title: 'WhatsApp direto', desc: 'Sem burocracia.' },
-  { icon: Leaf, title: 'Descarte legal', desc: 'Normas ambientais.' },
-  { icon: Truck, title: 'Frota própria', desc: 'Equipe treinada.' },
-  { icon: ShieldCheck, title: 'Licenciada', desc: 'Tudo em dia.' },
+const defaultBenefits = [
+  { title: 'Mesmo dia', description: 'Sua obra não para.' },
+  { title: 'Preço fechado', description: 'Zero taxa extra.' },
+  { title: 'WhatsApp direto', description: 'Sem burocracia.' },
+  { title: 'Descarte legal', description: 'Normas ambientais.' },
+  { title: 'Frota própria', description: 'Equipe treinada.' },
+  { title: 'Licenciada', description: 'Tudo em dia.' },
 ];
+
+const benefitIcons = [Clock, DollarSign, Headphones, Leaf, Truck, ShieldCheck];
 
 const fadeIn = (delay: number) => ({
   initial: { opacity: 0, y: 20 },
@@ -18,12 +21,19 @@ const fadeIn = (delay: number) => ({
 });
 
 export function BenefitsSection() {
+  const { settings } = useSiteSettings();
+  const benefits = ((settings?.benefits_items as any[]) || defaultBenefits).map((b, i) => ({
+    icon: benefitIcons[i] || Clock,
+    title: b.title,
+    desc: b.description,
+  }));
+
   return (
     <section id="beneficios" className="py-14 md:py-20" style={{ background: '#0e1a3a' }}>
       <div className="container">
         <motion.div {...fadeIn(0)} className="text-center mb-10">
           <h2 className="font-display text-2xl md:text-3xl font-extrabold tracking-tight" style={{ color: '#ffe8cb' }}>
-            Por que a gente?
+            {settings?.benefits_title || 'Por que a gente?'}
           </h2>
         </motion.div>
 

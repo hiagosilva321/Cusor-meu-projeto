@@ -22,6 +22,7 @@ import {
   Tag,
   Trash2,
   Loader2,
+  Globe,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { mapSupabaseAuthError } from '@/lib/auth-errors';
@@ -53,6 +54,66 @@ interface NewCouponForm {
   description: string;
 }
 
+interface TrustMark { label: string; highlight: boolean }
+interface BenefitItem { title: string; description: string }
+interface HowitStep { number: string; title: string; description: string }
+
+interface LpFormData {
+  hero_badge: string;
+  hero_title: string;
+  hero_subtitle: string;
+  hero_cta_primary: string;
+  hero_cta_secondary: string;
+  hero_trust_marks: TrustMark[];
+  benefits_title: string;
+  benefits_items: BenefitItem[];
+  howit_title: string;
+  howit_steps: HowitStep[];
+  discard_title: string;
+  discard_subtitle: string;
+  discard_items: string[];
+  cta_title: string;
+  cta_subtitle: string;
+  contact_badge: string;
+  contact_title: string;
+  contact_subtitle: string;
+  business_hours_weekday: string;
+  business_hours_saturday: string;
+  business_hours_emergency: string;
+  sizes_title: string;
+  sizes_subtitle: string;
+  regions_title: string;
+  regions_subtitle: string;
+}
+
+const LP_DEFAULTS: LpFormData = {
+  hero_badge: '',
+  hero_title: '',
+  hero_subtitle: '',
+  hero_cta_primary: '',
+  hero_cta_secondary: '',
+  hero_trust_marks: [],
+  benefits_title: '',
+  benefits_items: [],
+  howit_title: '',
+  howit_steps: [],
+  discard_title: '',
+  discard_subtitle: '',
+  discard_items: [],
+  cta_title: '',
+  cta_subtitle: '',
+  contact_badge: '',
+  contact_title: '',
+  contact_subtitle: '',
+  business_hours_weekday: '',
+  business_hours_saturday: '',
+  business_hours_emergency: '',
+  sizes_title: '',
+  sizes_subtitle: '',
+  regions_title: '',
+  regions_subtitle: '',
+};
+
 /* ─── Component ─── */
 
 export default function AdminConfiguracoes() {
@@ -80,6 +141,11 @@ export default function AdminConfiguracoes() {
     max_uses: '',
     description: '',
   });
+
+  /* ─── Tab: Landing Page ─── */
+  const [lpData, setLpData] = useState<LpFormData>(LP_DEFAULTS);
+  const [loadingLp, setLoadingLp] = useState(true);
+  const [savingLp, setSavingLp] = useState(false);
 
   /* ─── Tab: Conta Admin ─── */
   const [adminEmail, setAdminEmail] = useState<string | null>(null);
@@ -117,6 +183,40 @@ export default function AdminConfiguracoes() {
       setLoadingCoupons(false);
     }
 
+    async function fetchLpContent() {
+      const { data } = await supabase.from('site_settings').select('*').limit(1).single();
+      if (data) {
+        setLpData({
+          hero_badge: data.hero_badge ?? '',
+          hero_title: data.hero_title ?? '',
+          hero_subtitle: data.hero_subtitle ?? '',
+          hero_cta_primary: data.hero_cta_primary ?? '',
+          hero_cta_secondary: data.hero_cta_secondary ?? '',
+          hero_trust_marks: Array.isArray(data.hero_trust_marks) ? (data.hero_trust_marks as unknown as TrustMark[]) : [],
+          benefits_title: data.benefits_title ?? '',
+          benefits_items: Array.isArray(data.benefits_items) ? (data.benefits_items as unknown as BenefitItem[]) : [],
+          howit_title: data.howit_title ?? '',
+          howit_steps: Array.isArray(data.howit_steps) ? (data.howit_steps as unknown as HowitStep[]) : [],
+          discard_title: data.discard_title ?? '',
+          discard_subtitle: data.discard_subtitle ?? '',
+          discard_items: Array.isArray(data.discard_items) ? (data.discard_items as unknown as string[]) : [],
+          cta_title: data.cta_title ?? '',
+          cta_subtitle: data.cta_subtitle ?? '',
+          contact_badge: data.contact_badge ?? '',
+          contact_title: data.contact_title ?? '',
+          contact_subtitle: data.contact_subtitle ?? '',
+          business_hours_weekday: data.business_hours_weekday ?? '',
+          business_hours_saturday: data.business_hours_saturday ?? '',
+          business_hours_emergency: data.business_hours_emergency ?? '',
+          sizes_title: data.sizes_title ?? '',
+          sizes_subtitle: data.sizes_subtitle ?? '',
+          regions_title: data.regions_title ?? '',
+          regions_subtitle: data.regions_subtitle ?? '',
+        });
+      }
+      setLoadingLp(false);
+    }
+
     async function fetchUser() {
       const {
         data: { user },
@@ -127,6 +227,7 @@ export default function AdminConfiguracoes() {
     fetchSettings();
     fetchRegions();
     fetchCoupons();
+    fetchLpContent();
     fetchUser();
   }, []);
 
@@ -274,6 +375,55 @@ export default function AdminConfiguracoes() {
     }
   };
 
+  /* ─── Landing Page handlers ─── */
+
+  const handleLpText = (field: keyof LpFormData, value: string) => {
+    setLpData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handleSaveLp = async () => {
+    if (!settings) return;
+    setSavingLp(true);
+    const { error } = await supabase
+      .from('site_settings')
+      .update({
+        hero_badge: lpData.hero_badge,
+        hero_title: lpData.hero_title,
+        hero_subtitle: lpData.hero_subtitle,
+        hero_cta_primary: lpData.hero_cta_primary,
+        hero_cta_secondary: lpData.hero_cta_secondary,
+        hero_trust_marks: lpData.hero_trust_marks as unknown as Tables<'site_settings'>['hero_trust_marks'],
+        benefits_title: lpData.benefits_title,
+        benefits_items: lpData.benefits_items as unknown as Tables<'site_settings'>['benefits_items'],
+        howit_title: lpData.howit_title,
+        howit_steps: lpData.howit_steps as unknown as Tables<'site_settings'>['howit_steps'],
+        discard_title: lpData.discard_title,
+        discard_subtitle: lpData.discard_subtitle,
+        discard_items: lpData.discard_items as unknown as Tables<'site_settings'>['discard_items'],
+        cta_title: lpData.cta_title,
+        cta_subtitle: lpData.cta_subtitle,
+        contact_badge: lpData.contact_badge,
+        contact_title: lpData.contact_title,
+        contact_subtitle: lpData.contact_subtitle,
+        business_hours_weekday: lpData.business_hours_weekday,
+        business_hours_saturday: lpData.business_hours_saturday,
+        business_hours_emergency: lpData.business_hours_emergency,
+        sizes_title: lpData.sizes_title,
+        sizes_subtitle: lpData.sizes_subtitle,
+        regions_title: lpData.regions_title,
+        regions_subtitle: lpData.regions_subtitle,
+      })
+      .eq('id', settings.id);
+
+    if (error) {
+      toast.error('Erro ao salvar conteudo da landing page');
+    } else {
+      await refreshGlobalSettings();
+      toast.success('Conteudo da landing page salvo!');
+    }
+    setSavingLp(false);
+  };
+
   /* ─── Password change ─── */
 
   const handlePasswordChange = async (e: FormEvent) => {
@@ -364,6 +514,7 @@ export default function AdminConfiguracoes() {
           <TabsTrigger value="empresa">Dados da Empresa</TabsTrigger>
           <TabsTrigger value="regioes">Regiões Atendidas</TabsTrigger>
           <TabsTrigger value="cupons">Cupons</TabsTrigger>
+          <TabsTrigger value="landing">Landing Page</TabsTrigger>
           <TabsTrigger value="conta">Conta Admin</TabsTrigger>
         </TabsList>
 
@@ -679,6 +830,476 @@ export default function AdminConfiguracoes() {
                   </tbody>
                 </table>
               </div>
+            </div>
+          )}
+        </TabsContent>
+
+        {/* ═══ TAB: Landing Page ═══ */}
+        <TabsContent value="landing">
+          {loadingLp ? (
+            <p className="text-muted-foreground">Carregando...</p>
+          ) : (
+            <div className="max-w-2xl space-y-6">
+
+              {/* ── Hero Section ── */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Globe size={20} className="text-accent" />
+                    Hero Section
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="lp-hero-badge">Badge</Label>
+                    <Input
+                      id="lp-hero-badge"
+                      value={lpData.hero_badge}
+                      onChange={(e) => handleLpText('hero_badge', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="lp-hero-title">Titulo</Label>
+                    <Input
+                      id="lp-hero-title"
+                      value={lpData.hero_title}
+                      onChange={(e) => handleLpText('hero_title', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="lp-hero-subtitle">Subtitulo</Label>
+                    <Textarea
+                      id="lp-hero-subtitle"
+                      className="min-h-[80px]"
+                      value={lpData.hero_subtitle}
+                      onChange={(e) => handleLpText('hero_subtitle', e.target.value)}
+                    />
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label htmlFor="lp-hero-cta-primary">CTA Primario</Label>
+                      <Input
+                        id="lp-hero-cta-primary"
+                        value={lpData.hero_cta_primary}
+                        onChange={(e) => handleLpText('hero_cta_primary', e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="lp-hero-cta-secondary">CTA Secundario</Label>
+                      <Input
+                        id="lp-hero-cta-secondary"
+                        value={lpData.hero_cta_secondary}
+                        onChange={(e) => handleLpText('hero_cta_secondary', e.target.value)}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Trust Marks list */}
+                  <div className="space-y-2">
+                    <Label>Trust Marks</Label>
+                    {lpData.hero_trust_marks.map((tm, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <Input
+                          className="flex-1"
+                          placeholder="Label"
+                          value={tm.label}
+                          onChange={(e) => {
+                            const items = [...lpData.hero_trust_marks];
+                            items[i] = { ...items[i], label: e.target.value };
+                            setLpData((prev) => ({ ...prev, hero_trust_marks: items }));
+                          }}
+                        />
+                        <div className="flex items-center gap-1">
+                          <Switch
+                            checked={tm.highlight}
+                            onCheckedChange={(val) => {
+                              const items = [...lpData.hero_trust_marks];
+                              items[i] = { ...items[i], highlight: val };
+                              setLpData((prev) => ({ ...prev, hero_trust_marks: items }));
+                            }}
+                          />
+                          <span className="text-xs text-muted-foreground whitespace-nowrap">Destaque</span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            const items = lpData.hero_trust_marks.filter((_, idx) => idx !== i);
+                            setLpData((prev) => ({ ...prev, hero_trust_marks: items }));
+                          }}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <X size={16} />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setLpData((prev) => ({
+                          ...prev,
+                          hero_trust_marks: [...prev.hero_trust_marks, { label: '', highlight: false }],
+                        }))
+                      }
+                    >
+                      <Plus size={14} className="mr-1" /> Adicionar Trust Mark
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* ── Benefits Section ── */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Beneficios</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="lp-benefits-title">Titulo</Label>
+                    <Input
+                      id="lp-benefits-title"
+                      value={lpData.benefits_title}
+                      onChange={(e) => handleLpText('benefits_title', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Itens (max 8)</Label>
+                    {lpData.benefits_items.map((item, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                          <Input
+                            placeholder="Titulo"
+                            value={item.title}
+                            onChange={(e) => {
+                              const items = [...lpData.benefits_items];
+                              items[i] = { ...items[i], title: e.target.value };
+                              setLpData((prev) => ({ ...prev, benefits_items: items }));
+                            }}
+                          />
+                          <Input
+                            placeholder="Descricao"
+                            value={item.description}
+                            onChange={(e) => {
+                              const items = [...lpData.benefits_items];
+                              items[i] = { ...items[i], description: e.target.value };
+                              setLpData((prev) => ({ ...prev, benefits_items: items }));
+                            }}
+                          />
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            const items = lpData.benefits_items.filter((_, idx) => idx !== i);
+                            setLpData((prev) => ({ ...prev, benefits_items: items }));
+                          }}
+                          className="text-destructive hover:text-destructive mt-1"
+                        >
+                          <X size={16} />
+                        </Button>
+                      </div>
+                    ))}
+                    {lpData.benefits_items.length < 8 && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() =>
+                          setLpData((prev) => ({
+                            ...prev,
+                            benefits_items: [...prev.benefits_items, { title: '', description: '' }],
+                          }))
+                        }
+                      >
+                        <Plus size={14} className="mr-1" /> Adicionar Beneficio
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* ── How It Works Section ── */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Como Funciona</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="lp-howit-title">Titulo</Label>
+                    <Input
+                      id="lp-howit-title"
+                      value={lpData.howit_title}
+                      onChange={(e) => handleLpText('howit_title', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Passos</Label>
+                    {lpData.howit_steps.map((step, i) => (
+                      <div key={i} className="flex items-start gap-2">
+                        <div className="flex-1 grid grid-cols-[60px_1fr_1fr] gap-2">
+                          <Input
+                            placeholder="N"
+                            value={step.number}
+                            onChange={(e) => {
+                              const items = [...lpData.howit_steps];
+                              items[i] = { ...items[i], number: e.target.value };
+                              setLpData((prev) => ({ ...prev, howit_steps: items }));
+                            }}
+                          />
+                          <Input
+                            placeholder="Titulo"
+                            value={step.title}
+                            onChange={(e) => {
+                              const items = [...lpData.howit_steps];
+                              items[i] = { ...items[i], title: e.target.value };
+                              setLpData((prev) => ({ ...prev, howit_steps: items }));
+                            }}
+                          />
+                          <Input
+                            placeholder="Descricao"
+                            value={step.description}
+                            onChange={(e) => {
+                              const items = [...lpData.howit_steps];
+                              items[i] = { ...items[i], description: e.target.value };
+                              setLpData((prev) => ({ ...prev, howit_steps: items }));
+                            }}
+                          />
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            const items = lpData.howit_steps.filter((_, idx) => idx !== i);
+                            setLpData((prev) => ({ ...prev, howit_steps: items }));
+                          }}
+                          className="text-destructive hover:text-destructive mt-1"
+                        >
+                          <X size={16} />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setLpData((prev) => ({
+                          ...prev,
+                          howit_steps: [...prev.howit_steps, { number: String(prev.howit_steps.length + 1).padStart(2, '0'), title: '', description: '' }],
+                        }))
+                      }
+                    >
+                      <Plus size={14} className="mr-1" /> Adicionar Passo
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* ── What To Discard Section ── */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">O Que Descartar</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1">
+                      <Label htmlFor="lp-discard-title">Titulo</Label>
+                      <Input
+                        id="lp-discard-title"
+                        value={lpData.discard_title}
+                        onChange={(e) => handleLpText('discard_title', e.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <Label htmlFor="lp-discard-subtitle">Subtitulo</Label>
+                      <Input
+                        id="lp-discard-subtitle"
+                        value={lpData.discard_subtitle}
+                        onChange={(e) => handleLpText('discard_subtitle', e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Itens</Label>
+                    {lpData.discard_items.map((item, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <Input
+                          className="flex-1"
+                          value={item}
+                          onChange={(e) => {
+                            const items = [...lpData.discard_items];
+                            items[i] = e.target.value;
+                            setLpData((prev) => ({ ...prev, discard_items: items }));
+                          }}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            const items = lpData.discard_items.filter((_, idx) => idx !== i);
+                            setLpData((prev) => ({ ...prev, discard_items: items }));
+                          }}
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <X size={16} />
+                        </Button>
+                      </div>
+                    ))}
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() =>
+                        setLpData((prev) => ({ ...prev, discard_items: [...prev.discard_items, ''] }))
+                      }
+                    >
+                      <Plus size={14} className="mr-1" /> Adicionar Item
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* ── CTA Section ── */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">CTA</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="lp-cta-title">Titulo</Label>
+                    <Input
+                      id="lp-cta-title"
+                      value={lpData.cta_title}
+                      onChange={(e) => handleLpText('cta_title', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="lp-cta-subtitle">Subtitulo</Label>
+                    <Input
+                      id="lp-cta-subtitle"
+                      value={lpData.cta_subtitle}
+                      onChange={(e) => handleLpText('cta_subtitle', e.target.value)}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* ── Contact Form Section ── */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Formulario de Contato</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="lp-contact-badge">Badge</Label>
+                    <Input
+                      id="lp-contact-badge"
+                      value={lpData.contact_badge}
+                      onChange={(e) => handleLpText('contact_badge', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="lp-contact-title">Titulo</Label>
+                    <Input
+                      id="lp-contact-title"
+                      value={lpData.contact_title}
+                      onChange={(e) => handleLpText('contact_title', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="lp-contact-subtitle">Subtitulo</Label>
+                    <Input
+                      id="lp-contact-subtitle"
+                      value={lpData.contact_subtitle}
+                      onChange={(e) => handleLpText('contact_subtitle', e.target.value)}
+                    />
+                  </div>
+                  <hr className="my-2" />
+                  <p className="text-sm font-medium text-foreground">Horarios de Atendimento</p>
+                  <div className="space-y-1">
+                    <Label htmlFor="lp-hours-weekday">Seg a Sex</Label>
+                    <Input
+                      id="lp-hours-weekday"
+                      value={lpData.business_hours_weekday}
+                      onChange={(e) => handleLpText('business_hours_weekday', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="lp-hours-saturday">Sabado</Label>
+                    <Input
+                      id="lp-hours-saturday"
+                      value={lpData.business_hours_saturday}
+                      onChange={(e) => handleLpText('business_hours_saturday', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="lp-hours-emergency">Emergencia</Label>
+                    <Input
+                      id="lp-hours-emergency"
+                      value={lpData.business_hours_emergency}
+                      onChange={(e) => handleLpText('business_hours_emergency', e.target.value)}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* ── Sizes Section ── */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Tamanhos</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="lp-sizes-title">Titulo</Label>
+                    <Input
+                      id="lp-sizes-title"
+                      value={lpData.sizes_title}
+                      onChange={(e) => handleLpText('sizes_title', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="lp-sizes-subtitle">Subtitulo</Label>
+                    <Input
+                      id="lp-sizes-subtitle"
+                      value={lpData.sizes_subtitle}
+                      onChange={(e) => handleLpText('sizes_subtitle', e.target.value)}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* ── Regions Section ── */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Regioes</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-1">
+                    <Label htmlFor="lp-regions-title">Titulo</Label>
+                    <Input
+                      id="lp-regions-title"
+                      value={lpData.regions_title}
+                      onChange={(e) => handleLpText('regions_title', e.target.value)}
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="lp-regions-subtitle">Subtitulo</Label>
+                    <Input
+                      id="lp-regions-subtitle"
+                      value={lpData.regions_subtitle}
+                      onChange={(e) => handleLpText('regions_subtitle', e.target.value)}
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Button
+                className="w-full"
+                size="lg"
+                onClick={handleSaveLp}
+                disabled={savingLp}
+              >
+                <Save size={18} className="mr-2" />
+                {savingLp ? 'Salvando...' : 'Salvar Landing Page'}
+              </Button>
             </div>
           )}
         </TabsContent>

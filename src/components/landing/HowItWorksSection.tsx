@@ -1,12 +1,15 @@
 import { MessageCircle, Truck, Package, Recycle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useSiteSettings } from '@/hooks/use-site-settings';
 
-const steps = [
-  { num: '01', icon: MessageCircle, title: 'Fale conosco', desc: 'Diga o tamanho e endereço pelo WhatsApp.' },
-  { num: '02', icon: Truck, title: 'Receba no local', desc: 'Entregamos no mesmo dia ou na data combinada.' },
-  { num: '03', icon: Package, title: 'Use sem pressa', desc: 'Preencha a caçamba no seu ritmo de obra.' },
-  { num: '04', icon: Recycle, title: 'A gente retira', desc: 'Buscamos e destinamos tudo corretamente.' },
+const defaultSteps = [
+  { number: '01', title: 'Fale conosco', description: 'Diga o tamanho e endereço pelo WhatsApp.' },
+  { number: '02', title: 'Receba no local', description: 'Entregamos no mesmo dia ou na data combinada.' },
+  { number: '03', title: 'Use sem pressa', description: 'Preencha a caçamba no seu ritmo de obra.' },
+  { number: '04', title: 'A gente retira', description: 'Buscamos e destinamos tudo corretamente.' },
 ];
+
+const stepIcons = [MessageCircle, Truck, Package, Recycle];
 
 const fadeIn = (delay: number) => ({
   initial: { opacity: 0, y: 24 },
@@ -16,12 +19,20 @@ const fadeIn = (delay: number) => ({
 });
 
 export function HowItWorksSection() {
+  const { settings } = useSiteSettings();
+  const steps = ((settings?.howit_steps as any[]) || defaultSteps).map((s, i) => ({
+    num: s.number || String(i + 1).padStart(2, '0'),
+    icon: stepIcons[i] || MessageCircle,
+    title: s.title,
+    desc: s.description,
+  }));
+
   return (
     <section id="como-funciona" className="py-14 md:py-20 scroll-mt-20" style={{ background: '#0e1a3a' }}>
       <div className="container">
         <motion.div {...fadeIn(0)} className="text-center mb-10">
           <h2 className="font-display text-2xl md:text-3xl font-extrabold tracking-tight" style={{ color: '#ffe8cb' }}>
-            4 passos. Sua caçamba no local.
+            {settings?.howit_title || '4 passos. Sua caçamba no local.'}
           </h2>
         </motion.div>
 

@@ -1,9 +1,11 @@
 import { MessageCircle } from 'lucide-react';
 import { useWhatsApp } from '@/contexts/WhatsAppContext';
+import { useSiteSettings } from '@/hooks/use-site-settings';
 import { motion } from 'framer-motion';
 
 export function CtaSection() {
   const { getWhatsAppUrl, getCheckoutUrl, trackClick, available } = useWhatsApp();
+  const { settings } = useSiteSettings();
 
   return (
     <section className="py-16 md:py-24 relative overflow-hidden" style={{ background: 'linear-gradient(180deg, #051131 0%, #0e1a3a 50%, #051131 100%)' }}>
@@ -12,10 +14,10 @@ export function CtaSection() {
       <div className="container relative z-10">
         <motion.div initial={{ opacity: 0, y: 24 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }} className="text-center max-w-lg mx-auto">
           <h2 className="font-display text-3xl md:text-4xl font-extrabold tracking-tight mb-4" style={{ color: '#ffe8cb' }}>
-            Sua caçamba em até 24h.
+            {settings?.cta_title || 'Sua caçamba em até 24h.'}
           </h2>
           <p className="text-base mb-8" style={{ color: '#9f8e79' }}>
-            Resposta em menos de 5 minutos pelo WhatsApp.
+            {settings?.cta_subtitle || 'Resposta em menos de 5 minutos pelo WhatsApp.'}
           </p>
           {available ? (
             <a href={getWhatsAppUrl()} target="_blank" rel="noopener noreferrer" onClick={(e) => trackClick(e, 'cta')}

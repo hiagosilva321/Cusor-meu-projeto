@@ -3,8 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Tables } from '@/integrations/supabase/types';
 import { MapPin } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useSiteSettings } from '@/hooks/use-site-settings';
 
 export function RegionsSection() {
+  const { settings } = useSiteSettings();
   const [regions, setRegions] = useState<Tables<'regions'>[]>([]);
 
   useEffect(() => {
@@ -19,9 +21,9 @@ export function RegionsSection() {
       <div className="container">
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center mb-8">
           <h2 className="font-display text-2xl md:text-3xl font-extrabold tracking-tight" style={{ color: '#ffe8cb' }}>
-            Onde atendemos
+            {settings?.regions_title || 'Onde atendemos'}
           </h2>
-          <p className="mt-2 text-sm" style={{ color: '#9f8e79' }}>SP capital e região metropolitana.</p>
+          <p className="mt-2 text-sm" style={{ color: '#9f8e79' }}>{settings?.regions_subtitle || 'SP capital e região metropolitana.'}</p>
         </motion.div>
 
         <div className="flex flex-wrap justify-center gap-2 max-w-3xl mx-auto">

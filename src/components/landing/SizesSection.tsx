@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { MessageCircle } from 'lucide-react';
 import { useWhatsApp } from '@/contexts/WhatsAppContext';
+import { useSiteSettings } from '@/hooks/use-site-settings';
 import { motion } from 'framer-motion';
 
 interface DumpsterSize {
@@ -17,6 +18,7 @@ const fadeIn = (delay: number) => ({
 
 export function SizesSection() {
   const { getWhatsAppUrl, getCheckoutUrl, trackClick, available } = useWhatsApp();
+  const { settings } = useSiteSettings();
   const [sizes, setSizes] = useState<DumpsterSize[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -27,22 +29,20 @@ export function SizesSection() {
 
   if (loading || sizes.length === 0) return null;
 
-  const display = sizes.length > 4 ? sizes.filter(s => s.size !== '4m³') : sizes;
-
   return (
     <section id="tamanhos" className="py-14 md:py-20 scroll-mt-20" style={{ background: '#051131' }}>
       <div className="container">
         <motion.div {...fadeIn(0)} className="text-center mb-10">
           <h2 className="font-display text-2xl md:text-3xl font-extrabold tracking-tight" style={{ color: '#ffe8cb' }}>
-            Quanto custa?
+            {settings?.sizes_title || 'Quanto custa?'}
           </h2>
           <p className="mt-2 text-sm" style={{ color: '#9f8e79' }}>
-            Preço fechado — entrega, permanência e retirada inclusos.
+            {settings?.sizes_subtitle || 'Preço fechado — entrega, permanência e retirada inclusos.'}
           </p>
         </motion.div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
-          {display.map((item, i) => {
+        <div className={`grid grid-cols-1 sm:grid-cols-2 ${sizes.length >= 5 ? 'lg:grid-cols-5' : sizes.length === 3 ? 'lg:grid-cols-3' : 'lg:grid-cols-4'} gap-4 max-w-6xl mx-auto`}>
+          {sizes.map((item, i) => {
             const popular = item.size === '5m³';
             return (
               <motion.div key={item.id} {...fadeIn(0.06 + i * 0.08)}

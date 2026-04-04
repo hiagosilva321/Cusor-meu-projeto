@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { MessageCircle, Clock, ShieldCheck, Truck, ArrowRight } from 'lucide-react';
 import { useWhatsApp } from '@/contexts/WhatsAppContext';
+import { useSiteSettings } from '@/hooks/use-site-settings';
 import { motion, AnimatePresence } from 'framer-motion';
 import heroSlide1 from '@/assets/hero-slide-1.png';
 import heroSlide2 from '@/assets/hero-slide-2.png';
@@ -9,11 +10,13 @@ import heroSlide4 from '@/assets/hero-slide-4.png';
 
 const slides = [heroSlide1, heroSlide2, heroSlide3, heroSlide4];
 
-const trustMarks = [
-  { icon: Clock, label: 'Entrega hoje', highlight: false },
-  { icon: ShieldCheck, label: 'Licença CETESB', highlight: true },
-  { icon: Truck, label: '15+ caminhões', highlight: false },
+const defaultTrustMarks = [
+  { label: 'Entrega hoje', highlight: false },
+  { label: 'Licença CETESB', highlight: true },
+  { label: '15+ caminhões', highlight: false },
 ];
+
+const trustIcons = [Clock, ShieldCheck, Truck];
 
 const reveal = (delay: number) => ({
   initial: { opacity: 0, y: 36, filter: 'blur(6px)' },
@@ -23,7 +26,14 @@ const reveal = (delay: number) => ({
 
 export function HeroSection() {
   const { getWhatsAppUrl, getCheckoutUrl, trackClick, available } = useWhatsApp();
+  const { settings } = useSiteSettings();
   const [current, setCurrent] = useState(0);
+
+  const trustMarks = ((settings?.hero_trust_marks as any[]) || defaultTrustMarks).map((m, i) => ({
+    icon: trustIcons[i] || Clock,
+    label: m.label,
+    highlight: !!m.highlight,
+  }));
 
   const advance = useCallback(() => setCurrent((p) => (p + 1) % slides.length), []);
 
@@ -101,7 +111,7 @@ export function HeroSection() {
               backdropFilter: 'blur(8px)',
             }}>
               <span className="text-sm leading-none">⚡</span>
-              Entrega no mesmo dia em SP e Região
+              {settings?.hero_badge || 'Entrega no mesmo dia em SP e Região'}
             </span>
           </motion.div>
 
@@ -113,19 +123,11 @@ export function HeroSection() {
             lineHeight: 1.05,
             letterSpacing: '-0.03em',
             color: '#ffe8cb',
-          }}>
-            Aluguel de Caçambas
-            <br />
-            com Entrega{' '}
-            <span style={{
-              background: 'linear-gradient(135deg, #ffc56c 0%, #ffba44 100%)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-              textShadow: '0 0 60px rgba(255,197,108,0.15)',
-            }}>
-              Rápida e Segura
-            </span>
-          </motion.h1>
+          }}
+            dangerouslySetInnerHTML={{
+              __html: settings?.hero_title || 'Aluguel de Caçambas<br />com Entrega <span style="background:linear-gradient(135deg,#ffc56c 0%,#ffba44 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;text-shadow:0 0 60px rgba(255,197,108,0.15)">Rápida e Segura</span>',
+            }}
+          />
 
           {/* Body */}
           <motion.p {...reveal(0.4)} className="max-w-[440px] mb-9" style={{
@@ -134,8 +136,7 @@ export function HeroSection() {
             lineHeight: 1.7,
             color: '#c9baa8',
           }}>
-            Preço fechado com entrega, permanência e retirada. Sem surpresas.
-            Solicite agora e receba sua caçamba hoje.
+            {settings?.hero_subtitle || 'Preço fechado com entrega, permanência e retirada. Sem surpresas. Solicite agora e receba sua caçamba hoje.'}
           </motion.p>
 
           {/* CTAs — larger, with glow */}
@@ -148,7 +149,7 @@ export function HeroSection() {
                   boxShadow: '0 12px 36px rgba(18,167,73,0.4), 0 0 60px rgba(93,223,121,0.1), 0 0 0 1px rgba(93,223,121,0.12), inset 0 1px 0 rgba(255,255,255,0.1)',
                 }}>
                 <MessageCircle size={19} strokeWidth={2.5} />
-                Pedir pelo WhatsApp
+                {settings?.hero_cta_primary || 'Pedir pelo WhatsApp'}
               </a>
             ) : (
               <a href={getCheckoutUrl()}
@@ -169,7 +170,7 @@ export function HeroSection() {
                 backdropFilter: 'blur(6px)',
                 background: 'rgba(5,17,49,0.4)',
               }}>
-              Ver Tamanhos e Preços
+              {settings?.hero_cta_secondary || 'Ver Tamanhos e Preços'}
               <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" style={{ color: '#ffc56c' }} />
             </a>
           </motion.div>

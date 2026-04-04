@@ -9,6 +9,7 @@ import { getStoredReferralSource } from '@/lib/whatsapp-sticky';
 import { MessageCircle, Loader2, CreditCard, CalendarDays } from 'lucide-react';
 import { toast } from 'sonner';
 import { motion } from 'framer-motion';
+import { useSiteSettings } from '@/hooks/use-site-settings';
 
 interface DumpsterOption { size: string; title: string; price: number; }
 
@@ -20,6 +21,7 @@ export function ContactFormSection() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { getWhatsAppUrl, trackClick, available, assignedReferralSource } = useWhatsApp();
+  const { settings } = useSiteSettings();
   const referralSource = searchParams.get('ref') || getStoredReferralSource() || assignedReferralSource || null;
   const [loading, setLoading] = useState(false);
   const [loadingSizes, setLoadingSizes] = useState(true);
@@ -139,10 +141,10 @@ export function ContactFormSection() {
       <div className="container">
         <div className="text-center mb-10">
           <span className="inline-block px-4 py-1 rounded-full bg-amber-500/10 border border-amber-500/25 text-amber-400 text-xs font-semibold uppercase tracking-widest mb-4">
-            Solicite agora
+            {settings?.contact_badge || 'Solicite agora'}
           </span>
-          <h2 className="font-display text-3xl md:text-4xl font-extrabold text-white mb-3 tracking-tight">Faça Seu Pedido</h2>
-          <p className="text-slate-400">Preencha o formulário e pague com PIX.</p>
+          <h2 className="font-display text-3xl md:text-4xl font-extrabold text-white mb-3 tracking-tight">{settings?.contact_title || 'Faça Seu Pedido'}</h2>
+          <p className="text-slate-400">{settings?.contact_subtitle || 'Preencha o formulário e pague com PIX.'}</p>
         </div>
 
         <div className="max-w-4xl mx-auto grid grid-cols-1 lg:grid-cols-5 gap-6">
@@ -251,9 +253,9 @@ export function ContactFormSection() {
             <div className="p-5 rounded-2xl bg-[#0e1a38] border border-white/5">
               <h4 className="font-display text-sm font-bold text-white uppercase tracking-wider mb-3">Horário de Atendimento</h4>
               <div className="space-y-1.5 text-sm text-slate-400">
-                <p>Seg a Sex: 7h às 20h</p>
-                <p>Sábado: 7h às 20h</p>
-                <p className="text-amber-400/80">Emergência: 24 horas</p>
+                <p>{settings?.business_hours_weekday || 'Seg a Sex: 7h às 20h'}</p>
+                <p>{settings?.business_hours_saturday || 'Sábado: 7h às 20h'}</p>
+                <p className="text-amber-400/80">{settings?.business_hours_emergency || 'Emergência: 24 horas'}</p>
               </div>
             </div>
           </motion.div>

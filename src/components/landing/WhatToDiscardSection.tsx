@@ -1,21 +1,30 @@
 import { Recycle, Truck, Leaf } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useSiteSettings } from '@/hooks/use-site-settings';
 
-const items = [
-  { icon: Recycle, text: 'Entulho, madeira, ferro, gesso e mais' },
-  { icon: Truck, text: 'Retirada rápida no seu endereço' },
-  { icon: Leaf, text: 'Destinação ecológica responsável' },
+const defaultDiscardItems = [
+  'Entulho, madeira, ferro, gesso e mais',
+  'Retirada rápida no seu endereço',
+  'Destinação ecológica responsável',
 ];
 
+const discardIcons = [Recycle, Truck, Leaf];
+
 export function WhatToDiscardSection() {
+  const { settings } = useSiteSettings();
+  const items = ((settings?.discard_items as any[]) || defaultDiscardItems).map((text: string, i: number) => ({
+    icon: discardIcons[i] || Recycle,
+    text,
+  }));
+
   return (
     <section className="py-14 md:py-20" style={{ background: '#0e1a3a' }}>
       <div className="container">
         <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} viewport={{ once: true }} className="text-center mb-8">
           <h2 className="font-display text-2xl md:text-3xl font-extrabold tracking-tight" style={{ color: '#ffe8cb' }}>
-            O que pode jogar?
+            {settings?.discard_title || 'O que pode jogar?'}
           </h2>
-          <p className="mt-2 text-sm" style={{ color: '#9f8e79' }}>A gente cuida de tudo.</p>
+          <p className="mt-2 text-sm" style={{ color: '#9f8e79' }}>{settings?.discard_subtitle || 'A gente cuida de tudo.'}</p>
         </motion.div>
 
         <div className="flex flex-wrap justify-center gap-3 max-w-2xl mx-auto">
